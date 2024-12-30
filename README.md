@@ -1,6 +1,6 @@
 # python-snaptime
 
-A modern replacement to the abandoned [zartstrom/snaptime](https://github.com/zartstrom/snaptime) package `python-snaptime` will transform `datetime` objects using relative time modifiers.
+A modern replacement to the abandoned [zartstrom/snaptime](https://github.com/zartstrom/snaptime) package, `python-snaptime` will transform `datetime` objects using relative time modifiers.
 
 - Use snaptime strings to get relative dates/times for a given datetime.
 - Timezone aware.
@@ -37,15 +37,15 @@ DateTime(2024, 12, 29, 12, 0, 0, tzinfo=Timezone('Europe/London'))
 ```python
 >>> import pendulum
 >>> from python_snaptime import snap
->>> snap(pendulum.datetime(2024, 10, 27, 1, 59, 59, tz="Europe/London", fold=0), "+1s")  # pre-transition
-DateTime(2024, 10, 27, 1, 0, 0, tzinfo=Timezone('Europe/London'))
+>>> snap(pendulum.datetime(2024, 10, 27, 1, 59, 59, tz="Europe/London", fold=0), "+1s")
+DateTime(2024, 10, 27, 1, 0, 0, tzinfo=Timezone('Europe/London'))  # pre-transition
 ```
 
 ```python
 >>> import pendulum
 >>> from python_snaptime import snap
->>> snap(pendulum.datetime(2024, 10, 27, 1, 59, 59, tz="Europe/London", fold=1), "+1s")  # post-transition (default)
-DateTime(2024, 10, 27, 2, 0, 0, tzinfo=Timezone('Europe/London'))
+>>> snap(pendulum.datetime(2024, 10, 27, 1, 59, 59, tz="Europe/London", fold=1), "+1s")
+DateTime(2024, 10, 27, 2, 0, 0, tzinfo=Timezone('Europe/London'))  # post-transition (default)
 ```
 
 ### datetime
