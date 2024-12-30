@@ -172,3 +172,9 @@ poetry.toml
 
 # LSP config files
 pyrightconfig.json
+
+# VSCode
+.vscode
+
+# pyenv
+.python-version
