@@ -178,3 +178,7 @@ pyrightconfig.json
 
 # pyenv
 .python-version
+
+# misc
+docs
+main.py
