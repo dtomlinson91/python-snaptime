@@ -18,6 +18,11 @@ pycln = "^2.4.0"
 isort = "^5.13.2"
 poetry-dynamic-versioning = "^1.4.1"
 pytest = "^8.3.4"
+coverage = "^7.6.10"
+
+
+[tool.poetry.group.devv.dependencies]
+pytest-cov = "^6.0.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -27,7 +32,7 @@ build-backend = "poetry.core.masonry.api"
 line-length = 120
 indent-width = 4
 target-version = "py39"
-# include = ["pyproject.toml", "src/**/*.py", "scripts/**/*.py"]
+# include = []
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -53,16 +58,15 @@ ignore = [
 ]
 fixable = ["ALL"]
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-exclude = ["typings/**", "tests/**"]
+exclude = ["typings/**"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-# "logging.py" = [
-#     "ANN002", # missing-type-args
-#     "ANN003", # missing-type-kwargs
-# ]
+"handlers.py" = [
+    "C901", # complex-structure
+]
 
 [tool.ruff.format]
 quote-style = "double"
