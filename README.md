@@ -14,6 +14,9 @@ For example, `@d-2h` will give you two hours ago from the start of the day.
 - Chain snaps together as needed e.g `@d-12h+10m@h`.
 - Use either a snaptime string, or use Python to define snaptimes ([see advanced example](#advanced)).
 
+> [!NOTE]
+> This package was created as a more up to date replacement for [zartstrom/snaptime](https://github.com/zartstrom/snaptime), which is long since abandoned.
+
 ## Snaptime strings
 
 | Unit          | Strings                                   | Supports Snapping? | Supports Delta? |
