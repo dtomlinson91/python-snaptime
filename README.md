@@ -106,3 +106,29 @@ from python_snaptime import snap
 
 snapped_datetime = snap(pendulum.now(), "@d-2h+10m")
 ```
+
+### Advanced
+
+You can programmatically calculate snaptimes without a snaptime string, e.g the equivalent of `@d-2h` is:
+
+```python
+import pendulum
+
+from python_snaptime.handlers import handle_cases
+from python_snaptime.models import Action, Snaptime, Unit
+
+
+def main():
+    datetime = pendulum.now()
+    time_snapping_operations = [
+        Snaptime(action=Action.SNAP, unit=Unit.DAY),
+        Snaptime(action=Action.SUB, unit=Unit.HOUR, time_int=2),
+    ]
+    for operation in time_snapping_operations:
+        datetime = handle_cases(operation, datetime)
+    print(datetime)  # @d-2h
+
+
+if __name__ == "__main__":
+    main()
+```
