@@ -7,6 +7,8 @@ A modern replacement to the abandoned [zartstrom/snaptime](https://github.com/za
 - Effortlessly handles daylight savings using [pendulum](https://github.com/python-pendulum/pendulum).
 - Can snap to seconds, minutes, hours, days, weeks, months, quarters or years.
 - Can add/subtract milliseconds, seconds, minutes, hours, days, weeks, months, quarters or years.
+- Chain snaps together as needed e.g `@d-12h+10m@h`.
+- Use either a snaptime string, or use Python to define snaptimes ([see advanced example](#advanced)).
 
 This package is inspired by Splunk's [relative time modifiers](http://docs.splunk.com/Documentation/Splunk/latest/SearchReference/SearchTimeModifiers#How_to_specify_relative_time_modifiers).
 
