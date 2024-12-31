@@ -2,7 +2,7 @@
 
 A modern replacement to the abandoned [zartstrom/snaptime](https://github.com/zartstrom/snaptime) package, `python-snaptime` will transform `datetime` objects using relative time modifiers.
 
-- Use snaptime strings to get relative dates/times for a given datetime.
+- Use snaptime strings to get relative dates/times for a given datetime. E.g `@d-2h` will give you two hours ago from the start of the day.
 - Timezone aware.
 - Effortlessly handles daylight savings using [pendulum](https://github.com/python-pendulum/pendulum).
 - Can snap to seconds, minutes, hours, days, weeks, months, quarters or years.
@@ -19,6 +19,7 @@ Using `pendulum` timezones are handled easily.
 ```python
 >>> import pendulum
 >>> from python_snaptime import snap
+
 >>> snap(pendulum.datetime(2024, 12, 30, 18, 0, 0), "@d-12h")
 DateTime(2024, 12, 29, 12, 0, 0, tzinfo=Timezone('UTC'))
 ```
@@ -26,6 +27,7 @@ DateTime(2024, 12, 29, 12, 0, 0, tzinfo=Timezone('UTC'))
 ```python
 >>> import pendulum
 >>> from python_snaptime import snap
+
 >>> snap(pendulum.datetime(2024, 12, 30, 18, 0, 0, tz=pendulum.timezone("Europe/London")), "@d-12h")
 DateTime(2024, 12, 29, 12, 0, 0, tzinfo=Timezone('Europe/London'))
 ```
@@ -37,6 +39,7 @@ DateTime(2024, 12, 29, 12, 0, 0, tzinfo=Timezone('Europe/London'))
 ```python
 >>> import pendulum
 >>> from python_snaptime import snap
+
 >>> snap(pendulum.datetime(2024, 10, 27, 1, 59, 59, tz="Europe/London", fold=0), "+1s")
 DateTime(2024, 10, 27, 1, 0, 0, tzinfo=Timezone('Europe/London'))  # pre-transition
 ```
@@ -44,6 +47,7 @@ DateTime(2024, 10, 27, 1, 0, 0, tzinfo=Timezone('Europe/London'))  # pre-transit
 ```python
 >>> import pendulum
 >>> from python_snaptime import snap
+
 >>> snap(pendulum.datetime(2024, 10, 27, 1, 59, 59, tz="Europe/London", fold=1), "+1s")
 DateTime(2024, 10, 27, 2, 0, 0, tzinfo=Timezone('Europe/London'))  # post-transition (default)
 ```
@@ -55,6 +59,7 @@ Don't care about timezones/want to use builtin `datetime.datetime`?
 ```python
 >>> from datetime import datetime
 >>> from python_snaptime import snap
+
 >>> snap(datetime(2024, 12, 30, 18, 0, 0), "@d-12h")
 datetime.datetime(2024, 12, 29, 12, 0)
 ```
@@ -65,6 +70,7 @@ Can also work with builtin timezone aware datetimes
 >>> import pytz
 >>> from datetime import datetime
 >>> from python_snaptime import snap
+
 >>> snap(datetime(2024, 12, 30, 18, 0, 0, tzinfo=pytz.timezone("Europe/London")), "@d-12h")
 datetime.datetime(2024, 12, 29, 12, 0, tzinfo=Timezone('Europe/London'))
 ```
@@ -75,6 +81,28 @@ If using Python >=3.9 can use builtin `ZoneInfo`
 >>> from datetime import datetime
 >>> from zoneinfo import ZoneInfo
 >>> from python_snaptime import snap
+
 >>> snap(datetime(2024, 12, 30, 18, 0, 0, tzinfo=ZoneInfo("Europe/London")), "@d-12h")
 datetime.datetime(2024, 12, 29, 12, 0, tzinfo=Timezone('Europe/London'))
+```
+
+## Installation
+
+### pypi
+
+```sh
+# using poetry
+poetry add python-snaptime
+
+# using pip
+pip install python-snaptime
+```
+
+## Usage
+
+```python
+import pendulum
+from python_snaptime import snap
+
+snapped_datetime = snap(pendulum.now(), "@d-2h+10m")
 ```

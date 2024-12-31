@@ -17,6 +17,7 @@ ruff = "^0.8.4"
 pycln = "^2.4.0"
 isort = "^5.13.2"
 poetry-dynamic-versioning = "^1.4.1"
+pytest = "^8.3.4"
 
 [build-system]
 requires = ["poetry-core"]
@@ -52,7 +53,7 @@ ignore = [
 ]
 fixable = ["ALL"]
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-exclude = ["typings/**"]
+exclude = ["typings/**", "tests/**"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
