@@ -1,4 +1,4 @@
-.PHONY: lint
+.PHONY: lint test
 
 lint:
 	@echo "Linting the code"
@@ -8,3 +8,7 @@ lint:
 	poetry run ruff format ./python_snaptime
 	@echo "Cleaning with pycln"
 	poetry run pycln --all ./python_snaptime
+
+test:
+	@echo "Running tests"
+	poetry run pytest --cov=python_snaptime
