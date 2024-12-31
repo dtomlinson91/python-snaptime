@@ -2,17 +2,17 @@
 
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/python-snaptime)
 
-A modern replacement to the abandoned [zartstrom/snaptime](https://github.com/zartstrom/snaptime) package, `python-snaptime` will transform `datetime` objects using relative time modifiers.
+Inspired by Splunk's [relative time modifiers](http://docs.splunk.com/Documentation/Splunk/latest/SearchReference/SearchTimeModifiers#How_to_specify_relative_time_modifiers), `python-snaptime` will transform `datetime` objects using relative time modifiers.
 
-- Use snaptime strings to get relative dates/times for a given datetime. E.g `@d-2h` will give you two hours ago from the start of the day.
+For example, `@d-2h` will give you two hours ago from the start of the day.
+
+- Use snaptime strings to get relative dates/times for a given datetime.
 - Timezone aware.
 - Effortlessly handles daylight savings using [pendulum](https://github.com/python-pendulum/pendulum).
 - Can snap backwards in time to the nearest second, minute, hour, day, week, month, quarter or year.
 - Can add/subtract microseconds, milliseconds, seconds, minutes, hours, days, weeks, months, quarters or years.
 - Chain snaps together as needed e.g `@d-12h+10m@h`.
 - Use either a snaptime string, or use Python to define snaptimes ([see advanced example](#advanced)).
-
-This package is inspired by Splunk's [relative time modifiers](http://docs.splunk.com/Documentation/Splunk/latest/SearchReference/SearchTimeModifiers#How_to_specify_relative_time_modifiers).
 
 ## Snaptime strings
 
