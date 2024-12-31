@@ -182,3 +182,4 @@ pyrightconfig.json
 # misc
 docs
 main.py
+!python_snaptime/main.py
