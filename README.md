@@ -1,5 +1,7 @@
 # python-snaptime
 
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/python-snaptime)
+
 A modern replacement to the abandoned [zartstrom/snaptime](https://github.com/zartstrom/snaptime) package, `python-snaptime` will transform `datetime` objects using relative time modifiers.
 
 - Use snaptime strings to get relative dates/times for a given datetime. E.g `@d-2h` will give you two hours ago from the start of the day.

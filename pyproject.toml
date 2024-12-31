@@ -88,4 +88,4 @@ files = ["python_snaptime/__version__.py"]
 
 [tool.pyright]
 typeCheckingMode = "strict"
-ignore = ["typings/**"]
+ignore = ["typings/**", "tests/**"]
