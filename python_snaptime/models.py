@@ -19,6 +19,7 @@ class Action(str, Enum):
 class Unit(Enum):
     """Time Units."""
 
+    MICROSECOND = "us", "microsecond", "microseconds"
     MILLISECOND = "ms", "millisecond", "milliseconds"
     SECOND = "s", "sec", "secs", "second", "seconds"
     MINUTE = "m", "min", "mins", "minute", "minutes"
@@ -69,6 +70,8 @@ class Snaptime(BaseModel):
                 raise ValueError("Snaptime string is invalid: missing time unit when snapping.")
             if unit in Unit.MILLISECOND.value:
                 raise ValueError("Snaptime string is invalid: cannot snap to nearest millisecond.")
+            if unit in Unit.MICROSECOND.value:
+                raise ValueError("Snaptime string is invalid: cannot snap to nearest microsecond.")
         elif action in (Action.ADD, Action.SUB):
             if time_int is None:
                 raise ValueError("Snaptime string is invalid: missing time integer for time addition or subtraction.")

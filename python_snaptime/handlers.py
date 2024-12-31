@@ -31,6 +31,10 @@ def _handle_snap_cases(snap: Snaptime, dtm: pendulum.DateTime) -> pendulum.DateT
 def _handle_addition_cases(snap: Snaptime, dtm: pendulum.DateTime) -> pendulum.DateTime:
     if snap.time_int is None:
         raise ValueError("Time integer is required for ADD action.")
+    if snap.unit == Unit.MICROSECOND:
+        dtm = dtm.add(microseconds=snap.time_int)
+    if snap.unit == Unit.MILLISECOND:
+        dtm = dtm.add(microseconds=snap.time_int * 1000)
     if snap.unit == Unit.SECOND:
         dtm = dtm.add(seconds=snap.time_int)
     if snap.unit == Unit.MINUTE:
@@ -53,6 +57,10 @@ def _handle_addition_cases(snap: Snaptime, dtm: pendulum.DateTime) -> pendulum.D
 def _handle_subtraction_cases(snap: Snaptime, dtm: pendulum.DateTime) -> pendulum.DateTime:
     if snap.time_int is None:
         raise ValueError("Time integer is required for SUB action.")
+    if snap.unit == Unit.MICROSECOND:
+        dtm = dtm.subtract(microseconds=snap.time_int)
+    if snap.unit == Unit.MILLISECOND:
+        dtm = dtm.subtract(microseconds=snap.time_int * 1000)
     if snap.unit == Unit.SECOND:
         dtm = dtm.subtract(seconds=snap.time_int)
     if snap.unit == Unit.MINUTE:

@@ -7,12 +7,27 @@ A modern replacement to the abandoned [zartstrom/snaptime](https://github.com/za
 - Use snaptime strings to get relative dates/times for a given datetime. E.g `@d-2h` will give you two hours ago from the start of the day.
 - Timezone aware.
 - Effortlessly handles daylight savings using [pendulum](https://github.com/python-pendulum/pendulum).
-- Can snap to seconds, minutes, hours, days, weeks, months, quarters or years.
-- Can add/subtract milliseconds, seconds, minutes, hours, days, weeks, months, quarters or years.
+- Can snap backwards in time to the nearest second, minute, hour, day, week, month, quarter or year.
+- Can add/subtract microseconds, milliseconds, seconds, minutes, hours, days, weeks, months, quarters or years.
 - Chain snaps together as needed e.g `@d-12h+10m@h`.
 - Use either a snaptime string, or use Python to define snaptimes ([see advanced example](#advanced)).
 
 This package is inspired by Splunk's [relative time modifiers](http://docs.splunk.com/Documentation/Splunk/latest/SearchReference/SearchTimeModifiers#How_to_specify_relative_time_modifiers).
+
+## Snaptime strings
+
+| Unit          | Strings                                   | Supports Snapping? | Supports Delta? |
+| :------------ | :---------------------------------------- | :----------------: | :-------------: |
+| `MICROSECOND` | `us`, `microsecond`, `microseconds`       |         ❌         |       ✅        |
+| `MILLISECOND` | `ms`, `millisecond`, `milliseconds`       |         ❌         |       ✅        |
+| `SECOND`      | `s`, `sec`, `secs`, `second`, `seconds`   |         ✅         |       ✅        |
+| `MINUTE`      | `m`, `min`, `mins`, `minute`, `minutes`   |         ✅         |       ✅        |
+| `HOUR`        | `h`, `hr`, `hrs`, `hour`, `hours`         |         ✅         |       ✅        |
+| `DAY`         | `d`, `day`, `days`                        |         ✅         |       ✅        |
+| `WEEK`        | `w`, `week`, `weeks`                      |         ✅         |       ✅        |
+| `MONTH`       | `mon`, `month`, `months`                  |         ✅         |       ✅        |
+| `QUARTER`     | `q`, `qtr`, `qtrs`, `quarter`, `quarters` |         ✅         |       ✅        |
+| `YEAR`        | `y`, `yr`, `yrs`, `year`, `years`         |         ✅         |       ✅        |
 
 ## Examples
 
@@ -69,17 +84,6 @@ datetime.datetime(2024, 12, 29, 12, 0)
 ```
 
 Can also work with builtin timezone aware datetimes
-
-```python
->>> import pytz
->>> from datetime import datetime
->>> from python_snaptime import snap
-
->>> snap(datetime(2024, 12, 30, 18, 0, 0, tzinfo=pytz.timezone("Europe/London")), "@d-12h")
-datetime.datetime(2024, 12, 29, 12, 0, tzinfo=Timezone('Europe/London'))
-```
-
-If using Python >=3.9 can use builtin `ZoneInfo`
 
 ```python
 >>> from datetime import datetime
