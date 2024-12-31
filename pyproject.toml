@@ -6,7 +6,7 @@ authors = ["Daniel Tomlinson <dtomlinson@panaetius.co.uk>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 pendulum = "^3.0.0"
 pydantic = "^2.10.4"
 eval-type-backport = "^0.2.2"
@@ -26,7 +26,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.ruff]
 line-length = 120
 indent-width = 4
-target-version = "py38"
+target-version = "py39"
 # include = ["pyproject.toml", "src/**/*.py", "scripts/**/*.py"]
 
 [tool.ruff.lint]
