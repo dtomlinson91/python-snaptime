@@ -42,7 +42,8 @@ Using `pendulum` timezones are handled easily.
 >>> import pendulum
 >>> from python_snaptime import snap
 
->>> snap(pendulum.datetime(2024, 12, 30, 18, 0, 0), "@d-12h")
+>>> dtm = pendulum.datetime(2024, 12, 30, 18, 0, 0)
+>>> snap(dtm, "@d-12h")
 DateTime(2024, 12, 29, 12, 0, 0, tzinfo=Timezone('UTC'))
 ```
 
@@ -50,7 +51,8 @@ DateTime(2024, 12, 29, 12, 0, 0, tzinfo=Timezone('UTC'))
 >>> import pendulum
 >>> from python_snaptime import snap
 
->>> snap(pendulum.datetime(2024, 12, 30, 18, 0, 0, tz=pendulum.timezone("Europe/London")), "@d-12h")
+>>> dtm = pendulum.datetime(2024, 12, 30, 18, 0, 0, tz=pendulum.timezone("Europe/London"))
+>>> snap(dtm, "@d-12h")
 DateTime(2024, 12, 29, 12, 0, 0, tzinfo=Timezone('Europe/London'))
 ```
 
@@ -62,7 +64,8 @@ DateTime(2024, 12, 29, 12, 0, 0, tzinfo=Timezone('Europe/London'))
 >>> import pendulum
 >>> from python_snaptime import snap
 
->>> snap(pendulum.datetime(2024, 10, 27, 1, 59, 59, tz="Europe/London", fold=0), "+1s")
+>>> dtm = pendulum.datetime(2024, 10, 27, 1, 59, 59, tz="Europe/London", fold=0)
+>>> snap(dtm, "+1s")
 DateTime(2024, 10, 27, 1, 0, 0, tzinfo=Timezone('Europe/London'))  # pre-transition
 ```
 
@@ -70,7 +73,8 @@ DateTime(2024, 10, 27, 1, 0, 0, tzinfo=Timezone('Europe/London'))  # pre-transit
 >>> import pendulum
 >>> from python_snaptime import snap
 
->>> snap(pendulum.datetime(2024, 10, 27, 1, 59, 59, tz="Europe/London", fold=1), "+1s")
+>>> dtm = pendulum.datetime(2024, 10, 27, 1, 59, 59, tz="Europe/London", fold=1)
+>>> snap(dtm, "+1s")
 DateTime(2024, 10, 27, 2, 0, 0, tzinfo=Timezone('Europe/London'))  # post-transition (default)
 ```
 
@@ -82,7 +86,8 @@ Don't care about timezones/want to use builtin `datetime.datetime`?
 >>> from datetime import datetime
 >>> from python_snaptime import snap
 
->>> snap(datetime(2024, 12, 30, 18, 0, 0), "@d-12h")
+>>> dtm = datetime(2024, 12, 30, 18, 0, 0)
+>>> snap(dtm, "@d-12h")
 datetime.datetime(2024, 12, 29, 12, 0)
 ```
 
@@ -93,7 +98,8 @@ Can also work with builtin timezone aware datetimes
 >>> from zoneinfo import ZoneInfo
 >>> from python_snaptime import snap
 
->>> snap(datetime(2024, 12, 30, 18, 0, 0, tzinfo=ZoneInfo("Europe/London")), "@d-12h")
+>>> dtm = datetime(2024, 12, 30, 18, 0, 0, tzinfo=ZoneInfo("Europe/London"))
+>>> snap(dtm, "@d-12h")
 datetime.datetime(2024, 12, 29, 12, 0, tzinfo=Timezone('Europe/London'))
 ```
 
