@@ -1,7 +1,9 @@
 # python-snaptime
 
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/python-snaptime)
-[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/d252742da60f4d90b72aa7d7de1a7a2f)](https://app.codacy.com/gh/dtomlinson91/python-snaptime/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
+<!-- ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/python-snaptime) -->
+![Codacy coverage](https://img.shields.io/codacy/coverage/d252742da60f4d90b72aa7d7de1a7a2f?style=flat-square)
+![Codacy grade](https://img.shields.io/codacy/grade/d252742da60f4d90b72aa7d7de1a7a2f?style=flat-square)
+
 
 Inspired by Splunk's [relative time modifiers](http://docs.splunk.com/Documentation/Splunk/latest/SearchReference/SearchTimeModifiers#How_to_specify_relative_time_modifiers), `python-snaptime` will transform `datetime` objects using relative time modifiers.
 
