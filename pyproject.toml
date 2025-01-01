@@ -95,3 +95,7 @@ ignore = ["typings/**", "tests/**"]
 
 [tool.pytest]
 mock_use_standalone_module = true
+
+[tool.coverage.report]
+exclude_also = ["if TYPE_CHECKING:"]
+omit = ["__version__.py"]

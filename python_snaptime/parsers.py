@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from python_snaptime.handlers import handle_cases
 from python_snaptime.models import Snaptime
 
-if TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:
     import pendulum
 
 
