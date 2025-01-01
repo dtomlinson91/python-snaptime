@@ -1,6 +1,7 @@
 # python-snaptime
 
-<!-- ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/python-snaptime) -->
+![PyPI - Version](https://img.shields.io/pypi/v/python-snaptime?style=flat-square)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/python-snaptime)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/dtomlinson91/python-snaptime/codacy.yml?style=flat-square)
 ![Codacy coverage](https://img.shields.io/codacy/coverage/d252742da60f4d90b72aa7d7de1a7a2f?style=flat-square)
 ![Codacy grade](https://img.shields.io/codacy/grade/d252742da60f4d90b72aa7d7de1a7a2f?style=flat-square)
