@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 from typing import overload
+from zoneinfo import ZoneInfo
 
 import pendulum
 
@@ -43,5 +44,5 @@ def snap(dtm: pendulum.DateTime | datetime.datetime, snap: str) -> pendulum.Date
             snap_dtm = datetime.datetime.fromtimestamp(snap_dtm.timestamp(), tz=snap_dtm.tz)
         else:
             # naive
-            snap_dtm = datetime.datetime.fromtimestamp(snap_dtm.timestamp())  # noqa: DTZ006
+            snap_dtm = datetime.datetime.fromtimestamp(snap_dtm.naive().timestamp())  # noqa: DTZ006
     return snap_dtm

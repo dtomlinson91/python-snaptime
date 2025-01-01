@@ -56,7 +56,7 @@ def main():
         "@y-2y@q+3q@mon-9mon@w+26w@d-150d@h+1800h@m-54000m@s+3240000s-1500ms+2000us",
     ]
 
-    dtm = pendulum.datetime(2024, 12, 30, 13, 1, 10, 999999)
+    dtm = pendulum.datetime(2024, 12, 30, 13, 1, 10, 999999, tz=pendulum.timezone("America/New_York"))
     for snaptime in snaptimes:
         result = snap(dtm, snaptime)
         print(

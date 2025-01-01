@@ -48,12 +48,6 @@ jobs:
           make test
           poetry run coverage xml
 
-      - name: Save cache
-        uses: actions/cache/save@v3
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
-
       - name: Codacy Coverage Reporter
         uses: codacy/codacy-coverage-reporter-action@v1.3.0
         with:
