@@ -1,0 +1,111 @@
+[tool.poetry]
+name = "python-snaptime"
+version = "0.0.0"
+description = "Easily manipulate datetime objects with relative time modifiers. Snap, shift, and chain operations on timezone-aware datetimes. E.g `@d-2h`"
+authors = ["Daniel Tomlinson <dtomlinson@panaetius.co.uk>"]
+readme = "README.md"
+license = "ISC"
+homepage = "https://github.com/dtomlinson91/python-snaptime"
+repository = "https://github.com/dtomlinson91/python-snaptime"
+documentation = "https://github.com/dtomlinson91/python-snaptime"
+keywords = [
+    "datetime",
+    "time",
+    "datetime",
+    "timesnap",
+    "timesnapper",
+    "snaptime ",
+]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pendulum = "^3.0.0"
+pydantic = "^2.10.4"
+eval-type-backport = "^0.2.2"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.8.4"
+pycln = "^2.4.0"
+isort = "^5.13.2"
+pytest = "^8.3.4"
+coverage = "^7.6.10"
+pytest-mock = "^3.14.0"
+pytest-cov = "^6.0.0"
+
+
+[build-system]
+requires = ["poetry-core", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
+
+[tool.ruff]
+line-length = 120
+indent-width = 4
+target-version = "py39"
+# include = []
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    # ruff formatter
+    "W191",   # tab-indentation
+    "E111",   # indentation-with-invalid-multiple
+    "E114",   # indentation-with-invalid-multiple-comment
+    "E117",   # over-indented
+    "D206",   # indent-with-spaces
+    "D300",   # triple-single-quotes
+    "Q000",   # bad-quotes-inline-string
+    "Q001",   # bad-quotes-multiline-string
+    "Q002",   # bad-quotes-docstring
+    "Q003",   # avoidable-escaped-quote
+    "COM812", # missing-trailing-comma
+    "COM819", # prohibited-trailing-comma
+    "ISC001", # single-line-implicit-string-concatenation
+    "ISC002", # multi-line-implicit-string-concatenation
+
+    "EM101",  # raw-string-in-exception
+    "TRY003", # raise-vanilla-args
+]
+fixable = ["ALL"]
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+exclude = ["typings/**"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"handlers.py" = [
+    "C901", # complex-structure
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+
+[tool.isort]
+line_length = 120
+multi_line_output = 3
+force_single_line = false
+balanced_wrapping = true
+default_section = "THIRDPARTY"
+src_paths = ["./python_snaptime"]
+include_trailing_comma = true
+
+[tool.poetry-dynamic-versioning]
+enable = true
+
+[tool.poetry-dynamic-versioning.substitution]
+files = ["python_snaptime/__version__.py"]
+
+[tool.pyright]
+typeCheckingMode = "strict"
+ignore = ["typings/**", "tests/**"]
+
+[tool.pytest]
+mock_use_standalone_module = true
+
+[tool.coverage.report]
+exclude_also = ["if TYPE_CHECKING:"]
+omit = ["__version__.py"]
