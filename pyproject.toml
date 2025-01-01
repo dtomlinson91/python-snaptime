@@ -19,10 +19,9 @@ isort = "^5.13.2"
 poetry-dynamic-versioning = "^1.4.1"
 pytest = "^8.3.4"
 coverage = "^7.6.10"
-
-
-[tool.poetry.group.devv.dependencies]
+pytest-mock = "^3.14.0"
 pytest-cov = "^6.0.0"
+
 
 [build-system]
 requires = ["poetry-core"]
@@ -93,3 +92,6 @@ files = ["python_snaptime/__version__.py"]
 [tool.pyright]
 typeCheckingMode = "strict"
 ignore = ["typings/**", "tests/**"]
+
+[tool.pytest]
+mock_use_standalone_module = true
