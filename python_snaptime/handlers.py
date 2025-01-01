@@ -88,7 +88,7 @@ def _handle_delta_cases(snap: Snaptime, dtm: pendulum.DateTime) -> pendulum.Date
     return dtm
 
 
-def handle_cases(snap: Snaptime, dtm: pendulum.DateTime) -> pendulum.DateTime:
+def handle_timesnapping(snap: Snaptime, dtm: pendulum.DateTime) -> pendulum.DateTime:
     """Handle different time snapping cases based on the snaptime action.
 
     Args:

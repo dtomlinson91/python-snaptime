@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-from python_snaptime.handlers import handle_cases
+from python_snaptime.handlers import handle_timesnapping
 from python_snaptime.models import Snaptime
 
 if TYPE_CHECKING:
@@ -46,6 +46,6 @@ def parse_snaptime_string(snaptime: str, datetime: pendulum.DateTime) -> pendulu
         pendulum.DateTime: The resulting snapped datetime.
     """
     parsed_snaptimes = _parse_raw_snaptime(snaptime)
-    for snaptimes in parsed_snaptimes:
-        datetime = handle_cases(snaptimes, datetime)
+    for _snaptime in parsed_snaptimes:
+        datetime = handle_timesnapping(_snaptime, datetime)
     return datetime

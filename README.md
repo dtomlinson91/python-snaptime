@@ -136,7 +136,7 @@ You can programmatically calculate snaptimes without a snaptime string, e.g the 
 ```python
 import pendulum
 
-from python_snaptime.handlers import handle_cases
+from python_snaptime.handlers import handle_timesnapping
 from python_snaptime.models import Action, Snaptime, Unit
 
 
@@ -148,7 +148,7 @@ def main():
         Snaptime(action=Action.ADD, unit=Unit.MINUTE, time_int=10),
     ]
     for operation in time_snapping_operations:
-        datetime = handle_cases(operation, datetime)
+        datetime = handle_timesnapping(operation, datetime)
     print(datetime)  # `@d-2h+10m`
 
 

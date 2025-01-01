@@ -372,7 +372,7 @@ class TestHandleCases:
         mock_handle_cases = mocker.patch.object(handlers, "_handle_snap_cases")
 
         # act
-        handlers.handle_cases(snap, dtm)
+        handlers.handle_timesnapping(snap, dtm)
 
         # assert
         mock_handle_cases.assert_called_once_with(snap, dtm)
@@ -385,7 +385,7 @@ class TestHandleCases:
         mock_handle_cases = mocker.patch.object(handlers, "_handle_delta_cases")
 
         # act
-        handlers.handle_cases(snap, dtm)
+        handlers.handle_timesnapping(snap, dtm)
 
         # assert
         mock_handle_cases.assert_called_once_with(snap, dtm)
