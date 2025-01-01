@@ -6,7 +6,7 @@ on:
       - "v*"
 
 jobs:
-  codacy-analysis:
+  publish-package:
     runs-on: ubuntu-latest
 
     steps:

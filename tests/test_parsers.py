@@ -2,8 +2,8 @@ import pendulum
 import pytest
 from pytest_mock import MockerFixture
 
-from python_snaptime.models import Action, Snaptime, Unit
 from python_snaptime import parsers
+from python_snaptime.models import Action, Snaptime, Unit
 from python_snaptime.parsers import _parse_raw_snaptime, parse_snaptime_string
 
 
