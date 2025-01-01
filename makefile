@@ -12,3 +12,4 @@ lint:
 test:
 	@echo "Running tests"
 	poetry run pytest --cov=python_snaptime
+	poetry run coverage html

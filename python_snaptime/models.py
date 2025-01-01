@@ -35,7 +35,7 @@ class Unit(Enum):
         for member in cls:
             if value in member.value:
                 return member
-        return None
+        return None  # pragma: no cover
 
 
 class SnaptimeDict(TypedDict, total=False):
