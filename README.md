@@ -16,6 +16,7 @@ For example, `@d-2h` will give you two hours ago from the start of the day.
 - Can add/subtract microseconds, milliseconds, seconds, minutes, hours, days, weeks, months, quarters or years.
 - Chain snaps together as needed e.g `@d-12h+10m@h`.
 - Use either a snaptime string, or use Python to define snaptimes ([see advanced example](#advanced)).
+- Fully type annotated for IDE completion.
 
 > [!NOTE]
 > This package was created as a more up to date replacement for [zartstrom/snaptime](https://github.com/zartstrom/snaptime), which is long since abandoned.
