@@ -1,22 +1,32 @@
 [tool.poetry]
 name = "python-snaptime"
-version = "0.1.0"
-description = ""
+version = "0.0.0"
+description = "Easily manipulate datetime objects with relative time modifiers. Snap, shift, and chain operations on timezone-aware datetimes. E.g `@d-2h`"
 authors = ["Daniel Tomlinson <dtomlinson@panaetius.co.uk>"]
 readme = "README.md"
+license = "ISC"
+homepage = "https://github.com/dtomlinson91/python-snaptime"
+repository = "https://github.com/dtomlinson91/python-snaptime"
+documentation = "https://github.com/dtomlinson91/python-snaptime"
+keywords = [
+    "datetime",
+    "time",
+    "datetime",
+    "timesnap",
+    "timesnapper",
+    "snaptime ",
+]
 
 [tool.poetry.dependencies]
 python = "^3.9"
 pendulum = "^3.0.0"
 pydantic = "^2.10.4"
 eval-type-backport = "^0.2.2"
-pytz = "^2024.2"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.8.4"
 pycln = "^2.4.0"
 isort = "^5.13.2"
-poetry-dynamic-versioning = "^1.4.1"
 pytest = "^8.3.4"
 coverage = "^7.6.10"
 pytest-mock = "^3.14.0"
@@ -24,8 +34,8 @@ pytest-cov = "^6.0.0"
 
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.ruff]
 line-length = 120
