@@ -30,7 +30,7 @@ jobs:
       - name: Run tests
         run: |
             make test
-            coverage xml
+            poetry run coverage xml
 
       - name: Codacy Coverage Reporter
         uses: codacy/codacy-coverage-reporter-action@v1.3.0
