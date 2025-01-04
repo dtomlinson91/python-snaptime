@@ -52,10 +52,10 @@ from python_snaptime.models import Snaptime, Unit
 )
 def test_microseconds(unit, result):
     # act
-    result = Unit(unit)
+    unit_result = Unit(unit)
 
     # assert
-    assert result == result
+    assert unit_result == result
 
 
 class TestSnaptime:
