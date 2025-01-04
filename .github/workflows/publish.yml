@@ -44,11 +44,6 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit == 'true'
         run: poetry install --no-interaction --only-root
 
-      - name: Publish package
-        run: |
-          poetry config pypi-token.pypi ${{ secrets.PYPI_TOKEN }}
-          poetry publish --build
-
       - name: Build package
         run: |
           poetry build
