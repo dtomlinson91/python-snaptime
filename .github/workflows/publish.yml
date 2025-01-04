@@ -5,6 +5,9 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: write
+
 jobs:
   publish-package:
     runs-on: ubuntu-latest
@@ -14,7 +17,7 @@ jobs:
         uses: actions/checkout@v4.2.2
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: "3.11"
 
@@ -28,7 +31,7 @@ jobs:
 
       - name: Load cached venv
         id: cached-poetry-dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4.2.0
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
@@ -41,7 +44,26 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit == 'true'
         run: poetry install --no-interaction --only-root
 
+      - name: Build package
+        run: |
+          poetry build
+
+      - name: Generate changelog for latest tag
+        uses: orhun/git-cliff-action@v4.4.2
+        with:
+          config: cliff.toml
+          args: --latest
+        env:
+          OUTPUT: CHANGELOG.md
+          GITHUB_REPO: ${{ github.repository }}
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2.1.0
+        with:
+          files: dist/*
+          body_path: CHANGELOG.md
+
       - name: Publish package
         run: |
           poetry config pypi-token.pypi ${{ secrets.PYPI_TOKEN }}
-          poetry publish --build
+          poetry publish
