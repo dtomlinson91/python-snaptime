@@ -1,4 +1,4 @@
-.PHONY: lint test
+.PHONY: lint test changelog
 
 lint:
 	@echo "Linting the code"
@@ -13,3 +13,7 @@ test:
 	@echo "Running tests"
 	poetry run pytest --cov=python_snaptime
 	poetry run coverage html
+
+changelog:
+	@echo "Generating changelog"
+	git cliff > CHANGELOG.md

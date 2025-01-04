@@ -1,0 +1,108 @@
+# git-cliff ~ configuration file
+# https://git-cliff.org/docs/configuration
+
+[remote.github]
+owner = "dtomlinson91"
+repo = "python-snaptime"
+# token = ""
+
+[changelog]
+# template for the changelog footer
+header = """
+# Changelog\n
+All notable changes to this project will be documented in this file.
+
+This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).\n
+"""
+# template for the changelog body
+# https://keats.github.io/tera/docs/#introduction
+body = """
+{%- macro remote_url() -%}
+  https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}
+{%- endmacro -%}
+{% if version -%}
+    ## [{{ version | trim_start_matches(pat="4,v") | trim_start_matches(pat="5,v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else -%}
+    ## [Unreleased]
+{% endif -%}
+{% for group, commits in commits | group_by(attribute="group") %}
+    ### {{ group | upper_first }}
+    {% for commit in commits %}
+        - {% if commit.breaking %}💥 **BREAKING CHANGE**: {% endif %}{{ commit.message | upper_first -}}\
+          {% if commit.remote.username %} by [@{{ commit.remote.username }}](https://github.com/{{ commit.remote.username }}){%- endif -%}
+          {% if commit.remote.pr_number %} in \
+          [#{{ commit.remote.pr_number }}]({{ self::remote_url() }}/pull/{{ commit.remote.pr_number }}) \
+          {%- endif -%}
+          {% if commit.body %}
+          \n{% for line in commit.body | split(pat="\n") %}
+          {{- line | indent(prefix="    ", first=true) }}
+          {% endfor -%}
+          {% endif -%}
+    {% endfor %}
+{% endfor %}\n
+"""
+
+# template for the changelog footer
+footer = """
+{% for release in releases -%}
+    {% if release.version -%}
+        {% if release.previous.version -%}
+            [{{ release.version | trim_start_matches(pat="4,v") | trim_start_matches(pat="5,v") }}]: \
+                https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}\
+                    /compare/{{ release.previous.version }}..{{ release.version }}
+        {% endif -%}
+    {% else -%}
+        [unreleased]: https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}\
+            /compare/{{ release.previous.version }}..HEAD
+    {% endif -%}
+{% endfor %}
+"""
+# remove the leading and trailing whitespace from the templates
+trim = true
+
+[git]
+# parse the commits based on https://www.conventionalcommits.org
+conventional_commits = true
+# filter out the commits that are not conventional
+filter_unconventional = true
+# process each line of a commit as an individual commit
+split_commits = false
+
+
+# regex for parsing and grouping commits
+commit_parsers = [
+    { message = "^feat", group = "✨ Features" },
+    { message = "^fix", group = "🐛 Bug Fixes" },
+    { message = "^doc", group = "📘 Documentation" },
+    { message = "^perf", group = "🏎 Performance" },
+    { message = "^refactor", group = "🛠 Refactor/Improvement" },
+    { message = "^style", group = "🎨 Styling", skip = true },
+    { message = "^test", group = "🧪 Testing", skip = true },
+    { message = "^build", group = "🧱 Build", skip = true },
+    { body = ".*security", group = "🔐 Security", skip = true },
+    { message = "^chore\\(deps.*\\)", skip = true },
+    { message = "^chore\\(pr\\)", skip = true },
+    { message = "^chore\\(pull\\)", skip = true },
+    { message = "^chore\\(release\\): prepare for", skip = true },
+    { message = "^chore|^ci", group = "🥱 Miscellaneous Tasks", skip = false },
+]
+# protect breaking changes from being skipped due to matching a skipping commit_parser
+protect_breaking_commits = true
+# filter out the commits that are not matched by commit parsers
+filter_commits = true
+# regex for matching git tags
+tag_pattern = "^(v[0-9]+.[0-9]+.[0-9]+)$"
+# tag_pattern = "^(v[0-9]+.[0-9]+.[0-9]+)(?:.dev[0-9]+)?$"
+# regex for skipping tags
+skip_tags = "v0.1.0-beta.1"
+# regex for ignoring tags
+ignore_tags = ""
+# sort the tags topologically
+topo_order = false
+# sort the commits inside sections by oldest/newest order
+sort_commits = "oldest"
+
+commit_preprocessors = [
+    # remove issue numbers from commits
+    { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "" },
+]
