@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   publish-package:
@@ -63,7 +64,7 @@ jobs:
           files: dist/*
           body_path: CHANGELOG.md
 
-      - name: Publish package
-        run: |
-          poetry config pypi-token.pypi ${{ secrets.PYPI_TOKEN }}
-          poetry publish
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.12.3
+        # with:
+          # repository-url: https://test.pypi.org/legacy/
