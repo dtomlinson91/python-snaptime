@@ -57,13 +57,13 @@ jobs:
           OUTPUT: CHANGELOG.md
           GITHUB_REPO: ${{ github.repository }}
 
-      - name: Create release
-        uses: softprops/action-gh-release@v2.1.0
-        with:
-          files: dist/*
-          body_path: CHANGELOG.md
+      # - name: Create release
+      #   uses: softprops/action-gh-release@v2.1.0
+      #   with:
+      #     files: dist/*
+      #     body_path: CHANGELOG.md
 
-      - name: Publish package
-        run: |
-          poetry config pypi-token.pypi ${{ secrets.PYPI_TOKEN }}
-          poetry publish
+      - name: Publish package distributions to TestPyPI
+        uses: pypa/gh-action-pypi-publish@v1.12.3
+        with:
+          repository-url: https://test.pypi.org/legacy/
