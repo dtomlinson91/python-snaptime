@@ -19,7 +19,7 @@ keywords = [
 
 [tool.poetry.dependencies]
 python = "^3.9"
-pendulum = "^3.0.0"
+pendulum = ">=2,<4"
 pydantic = "^2.10.4"
 eval-type-backport = "^0.2.2"
 
