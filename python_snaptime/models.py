@@ -16,7 +16,6 @@ class Action(str, Enum):
     SUB = "-"
 
 
-# TODO: test each unit
 class Unit(Enum):
     """Time Units."""
 
