@@ -18,19 +18,19 @@ keywords = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 pendulum = ">=2,<4"
-pydantic = "^2.10.4"
-eval-type-backport = "^0.2.2"
+pydantic = "^2.13.5"
+eval-type-backport = "^0.4.0"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.8.4"
-pycln = "^2.4.0"
-isort = "^5.13.2"
-pytest = "^8.3.4"
-coverage = "^7.6.10"
-pytest-mock = "^3.14.0"
-pytest-cov = "^6.0.0"
+ruff = "^0.17.3"
+pycln = "^2.6.0"
+isort = "^9.0.2"
+pytest = "^9.2.0"
+coverage = "^7.10.7"
+pytest-mock = "^3.15.1"
+pytest-cov = "^7.1.0"
 
 
 [build-system]
@@ -40,8 +40,11 @@ build-backend = "poetry_dynamic_versioning.backend"
 [tool.ruff]
 line-length = 120
 indent-width = 4
-target-version = "py39"
-# include = []
+target-version = "py311"
+# include = ["pyproject.toml", "src/**/*.py", "scripts/**/*.py"]
+# required-version = ">=X.Y.Z"
+# unsafe-fixes = true
+extend-exclude = ["typings"]
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -51,30 +54,39 @@ ignore = [
     "E111",   # indentation-with-invalid-multiple
     "E114",   # indentation-with-invalid-multiple-comment
     "E117",   # over-indented
-    "D206",   # indent-with-spaces
+    "D206",   # docstring-tab-indentation
     "D300",   # triple-single-quotes
-    "Q000",   # bad-quotes-inline-string
-    "Q001",   # bad-quotes-multiline-string
-    "Q002",   # bad-quotes-docstring
-    "Q003",   # avoidable-escaped-quote
+    "Q",      # flake8-quotes (Q000-Q004)
     "COM812", # missing-trailing-comma
     "COM819", # prohibited-trailing-comma
-    "ISC001", # single-line-implicit-string-concatenation
-    "ISC002", # multi-line-implicit-string-concatenation
 
-    "EM101",  # raw-string-in-exception
-    "TRY003", # raise-vanilla-args
+    "ANN401",  # any-type
+    "CPY",     # flake8-copyright
+    "DTZ006",  # call-datetime-fromtimestamp
+    # "PLR0913", # too-many-arguments
+    # "FA",      # flake8-future-annotations
+    # "T201",    # print
+    # "TRY003",  # Avoid specifying long messages outside the exception class
+    # "EM101",   # Exception must not use a string literal, assign to variable first
+    # "S113",    # request-without-timeout
+    # "S608",    # hardcoded-sql-expression
+    # "RET503",  # implicit-return
 ]
-fixable = ["ALL"]
-dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-exclude = ["typings/**"]
+exclude = ["tests"]  # lint only, ruff format still formats these files
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+[tool.ruff.lint.pylint]
+max-args = 8
+
+[tool.ruff.lint.isort]
+known-first-party = ["python_snaptime"]
+
 [tool.ruff.lint.per-file-ignores]
-"handlers.py" = [
-    "C901", # complex-structure
+"tests/**/*.py" = [
+    "S101",    # assert
+    "PLR2004", # magic-value-comparison
 ]
 
 [tool.ruff.format]
@@ -83,15 +95,6 @@ indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
 docstring-code-format = true
-
-[tool.isort]
-line_length = 120
-multi_line_output = 3
-force_single_line = false
-balanced_wrapping = true
-default_section = "THIRDPARTY"
-src_paths = ["./python_snaptime"]
-include_trailing_comma = true
 
 [tool.poetry-dynamic-versioning]
 enable = true
