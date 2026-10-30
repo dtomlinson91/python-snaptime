@@ -9,7 +9,7 @@ import pendulum
 
 from python_snaptime.parsers import parse_snaptime_string
 
-__all__ = ["snap"]
+__all__ = ["snap", "snap_now"]
 
 
 @overload
@@ -46,3 +46,20 @@ def snap(dtm: pendulum.DateTime | dt.datetime, snap: str) -> pendulum.DateTime |
             # naive
             snap_dtm = dt.datetime.combine(snap_dtm.date(), snap_dtm.time())
     return snap_dtm
+
+
+def snap_now(snaptime: str, tz: str | dt.tzinfo | None = None) -> pendulum.DateTime:
+    """Transform the current time using relative time modifiers.
+
+    Args:
+        snaptime (str): The snaptime string defining the relative time transformation.
+        tz (str | dt.tzinfo | None): The timezone of the current time. Defaults to UTC.
+
+    Returns:
+        pendulum.DateTime: The resulting snapped datetime in the timezone `tz`.
+    """
+    now = pendulum.now(tz if isinstance(tz, str) else "UTC")
+    if isinstance(tz, dt.tzinfo):
+        # pendulum loses a non-pendulum tzinfo when it snaps, so convert it to a pendulum timezone
+        now = pendulum.instance(dt.datetime.combine(now.date(), now.time(), now.tzinfo).astimezone(tz))
+    return snap(now, snaptime)
