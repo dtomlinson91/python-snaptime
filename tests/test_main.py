@@ -510,6 +510,7 @@ class TestSnap:
         result = snap(dtm, "@w", week_start=week_start)
 
         # assert
+        assert type(result) is pendulum.DateTime
         assert result == snap_dtm
 
     def test_snap_week_start_default_is_monday(self):
@@ -517,6 +518,7 @@ class TestSnap:
         result = snap(pendulum.datetime(2024, 12, 31), "@w")
 
         # assert
+        assert type(result) is pendulum.DateTime
         assert result == pendulum.datetime(2024, 12, 30)
 
     def test_snap_week_start_datetime(self, datetime_dtm: datetime):
@@ -532,5 +534,15 @@ class TestSnap:
         result = snap(datetime_dtm_timezone, "@w", week_start=Weekday.WEDNESDAY)
 
         # assert
+        assert type(result) is datetime
         assert result == datetime(2024, 12, 25, 0, 0, 0, tzinfo=ZoneInfo("America/New_York"))
         assert result.tzinfo == ZoneInfo("America/New_York")
+
+    def test_snap_week_start_pendulum_timezone(self, pendulum_dtm_timezone: pendulum.DateTime):
+        # act
+        result = snap(pendulum_dtm_timezone, "@w", week_start=Weekday.WEDNESDAY)
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result == pendulum.datetime(2024, 12, 25, tz=pendulum.timezone("America/New_York"))
+        assert result.timezone_name == "America/New_York"
