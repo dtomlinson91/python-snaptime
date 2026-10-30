@@ -55,6 +55,22 @@ def parse(snaptime: str) -> list[Snaptime]:
     return results
 
 
+def is_valid(snaptime: str) -> bool:
+    """Check if a snaptime string is valid.
+
+    Args:
+        snaptime (str): The snaptime string to check, for example `@d-2h`.
+
+    Returns:
+        bool: `True` if `parse` accepts the snaptime string, else `False`.
+    """
+    try:
+        parse(snaptime)
+    except SnaptimeError:
+        return False
+    return True
+
+
 def to_string(snaptimes: Iterable[Snaptime]) -> str:
     """Convert snaptimes to a snaptime string.
 

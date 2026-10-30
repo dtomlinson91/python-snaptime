@@ -137,7 +137,7 @@ pip install python-snaptime
 ```python
 import pendulum
 from python_snaptime import (
-    SnaptimeError, Weekday, apply, compile, parse, snap, snap_now, snap_range, to_string,
+    SnaptimeError, Weekday, apply, compile, is_valid, parse, snap, snap_now, snap_range, to_string,
 )
 
 now = pendulum.datetime(2024, 12, 30, 18, 52)  # Monday
@@ -158,6 +158,8 @@ to_string(ops)          # "@d-2h"
 yesterday = compile("-1d@d")
 yesterday.apply(now)    # 2024-12-29 00:00
 
+is_valid("@d-2h")       # True
+is_valid("@ms")         # False
 snap(now, "@ms")        # raises SnaptimeError, a subclass of ValueError
 ```
 
