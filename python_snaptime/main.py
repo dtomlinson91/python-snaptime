@@ -28,7 +28,7 @@ def snap(dtm: pendulum.DateTime | dt.datetime, snap: str) -> pendulum.DateTime |
         snap (str): The snaptime string defining the relative time transformation.
 
     Returns:
-        pendulum.DateTime | dt.datetime: The resulting snapped dt.
+        pendulum.DateTime | dt.datetime: The resulting snapped datetime.
     """
     if isinstance(dtm, pendulum.DateTime):
         snap_dtm = parse_snaptime_string(snap, dtm)

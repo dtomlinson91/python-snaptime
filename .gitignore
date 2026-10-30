@@ -185,3 +185,4 @@ main.py
 !python_snaptime/main.py
 
 .DS_Store
+python_snaptime/__version__.py
