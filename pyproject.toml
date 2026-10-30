@@ -79,7 +79,7 @@ ignore = [
     # "S608",    # hardcoded-sql-expression
     # "RET503",  # implicit-return
 ]
-exclude = ["tests", "scripts/test.py"]  # lint only, ruff format still formats these files
+exclude = ["scripts/test.py"]  # lint only, ruff format still formats these files
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
