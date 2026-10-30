@@ -136,7 +136,9 @@ pip install python-snaptime
 
 ```python
 import pendulum
-from python_snaptime import snap, to_string
+from python_snaptime import (
+    apply, parse, snap, to_string,
+)
 
 now = pendulum.datetime(2024, 12, 30, 18, 52)  # Monday
 
@@ -144,6 +146,8 @@ snap(now, "@d")                             # 2024-12-30 00:00, start of today
 snap(now, "@d-2h+10m")                      # 2024-12-29 22:10
 snap(now, "@15m")                           # 2024-12-30 18:45, 15-minute bucket
 
+ops = parse("@d-2h")    # parse once
+apply(now, ops)         # 2024-12-29 22:00, apply many times
 to_string(ops)          # "@d-2h"
 ```
 
@@ -154,21 +158,12 @@ You can programmatically calculate snaptimes without a snaptime string, e.g the 
 ```python
 import pendulum
 
-from python_snaptime import Action, Snaptime, Unit, handle_timesnapping
+from python_snaptime import Action, Snaptime, Unit, apply
 
-
-def main():
-    datetime = pendulum.now()
-    time_snapping_operations = [
-        Snaptime(action=Action.SNAP, unit=Unit.DAY),
-        Snaptime(action=Action.SUB, unit=Unit.HOUR, time_int=2),
-        Snaptime(action=Action.ADD, unit=Unit.MINUTE, time_int=10),
-    ]
-    for operation in time_snapping_operations:
-        datetime = handle_timesnapping(operation, datetime)
-    print(datetime)  # `@d-2h+10m`
-
-
-if __name__ == "__main__":
-    main()
+operations = [
+    Snaptime(action=Action.SNAP, unit=Unit.DAY),
+    Snaptime(action=Action.SUB, unit=Unit.HOUR, time_int=2),
+    Snaptime(action=Action.ADD, unit=Unit.MINUTE, time_int=10),
+]
+apply(pendulum.now(), operations)  # `@d-2h+10m`
 ```

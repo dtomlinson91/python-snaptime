@@ -2,14 +2,15 @@ import re
 
 import pendulum
 import pytest
+import python_snaptime
 from pytest_mock import MockerFixture
 from python_snaptime import parsers
 from python_snaptime.models import Action, Snaptime, Unit
-from python_snaptime.parsers import _parse_raw_snaptime, parse_snaptime_string, to_string
+from python_snaptime.parsers import parse, parse_snaptime_string, to_string
 
 
-class TestParseRawSnaptime:
-    def test_parse_raw_snaptime_valid(self):
+class TestParse:
+    def test_parse_valid(self):
         # arrange
         snaptime = "@d-2h+10m"
         snap_results = [
@@ -19,36 +20,41 @@ class TestParseRawSnaptime:
         ]
 
         # act
-        results = _parse_raw_snaptime(snaptime)
+        results = parse(snaptime)
 
         # assert
         assert results == snap_results
 
-    def test_parse_raw_snaptime_snap_multiple(self):
+    def test_parse_snap_multiple(self):
         # act
-        results = _parse_raw_snaptime("@15m")
+        results = parse("@15m")
 
         # assert
         assert results == [Snaptime(action=Action.SNAP, unit=Unit.MINUTE, time_int=15)]
 
-    def test_parse_raw_snaptime_invalid(self, mocker):
+    def test_parse_invalid(self, mocker):
         # arrange
         snaptime = ""
 
         # act/assert
         with pytest.raises(ValueError, match="^Snaptime string is invalid$"):
-            _parse_raw_snaptime(snaptime)
+            parse(snaptime)
 
     @pytest.mark.parametrize(
         "snaptime,character",
         [("@d!", "!"), ("@d -2h", " "), ("@d,-2h", ","), ("@d$$+1h", "$"), ("@d-1.5h", ".")],
     )
-    def test_parse_raw_snaptime_unknown_character(self, snaptime: str, character: str):
+    def test_parse_unknown_character(self, snaptime: str, character: str):
         # act/assert
         with pytest.raises(
             ValueError, match=re.escape(f"Snaptime string is invalid: unknown character `{character}`.")
         ):
-            _parse_raw_snaptime(snaptime)
+            parse(snaptime)
+
+    def test_parse_exported_from_package(self):
+        # assert
+        assert python_snaptime.parse is parse
+        assert "parse" in python_snaptime.__all__
 
 
 def test_parse_snaptime_string(mocker: MockerFixture):
@@ -135,11 +141,11 @@ class TestToString:
     )
     def test_to_string_round_trip(self, snaptime: str, result: str):
         # arrange
-        snaptimes = _parse_raw_snaptime(snaptime)
+        snaptimes = parse(snaptime)
 
         # act
         snaptime_str = to_string(snaptimes)
 
         # assert
         assert snaptime_str == result
-        assert _parse_raw_snaptime(snaptime_str) == snaptimes
+        assert parse(snaptime_str) == snaptimes
