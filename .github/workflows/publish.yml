@@ -35,20 +35,34 @@ jobs:
       - name: Build package
         run: uv build
 
-      - name: Generate changelog for latest tag
-        uses: orhun/git-cliff-action@v4.9.1
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2
         with:
-          config: cliff.toml
-          args: --latest
+          tool: git-cliff@2.14.2
+
+      # the release notes come from the default branch, the same as in changelog.yaml
+      - name: Generate release notes for latest tag
         env:
-          OUTPUT: CHANGELOG.md
-          GITHUB_REPO: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          git fetch origin "$DEFAULT_BRANCH"
+
+          if git show "origin/$DEFAULT_BRANCH:release-notes.json" > "$RUNNER_TEMP/release-notes.json" 2>/dev/null; then
+            git cliff --config cliff.toml --latest --context \
+              | jq --slurpfile notes "$RUNNER_TEMP/release-notes.json" \
+                  'map(. as $release | if .version then . + {extra: ($notes[0] | map(select(.version == $release.version)) | first | .release_notes)} else . end)' \
+              | git cliff --config cliff.toml --from-context - --strip all --output "$RUNNER_TEMP/RELEASE_NOTES.md"
+          else
+            git cliff --config cliff.toml --latest --strip all --output "$RUNNER_TEMP/RELEASE_NOTES.md"
+          fi
 
       - name: Create release
         uses: softprops/action-gh-release@v3.0.3
         with:
           files: dist/*
-          body_path: CHANGELOG.md
+          body_path: ${{ runner.temp }}/RELEASE_NOTES.md
 
       - name: Publish package distributions to PyPI
         run: uv publish --trusted-publishing always
