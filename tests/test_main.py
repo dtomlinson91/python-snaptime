@@ -11,6 +11,7 @@ from python_snaptime import (
     Action,
     CompiledSnaptime,
     Snaptime,
+    SnaptimeError,
     Unit,
     Weekday,
     apply,
@@ -613,7 +614,7 @@ class TestSnapMultiple:
     @pytest.mark.parametrize("snaptime", ["@7m", "@2d", "@0m", "@5h", "@2w", "@2mon", "@2q", "@2y"])
     def test_snap_multiple_invalid(self, dtm: pendulum.DateTime, snaptime: str):
         # act/assert
-        with pytest.raises(ValueError, match="Snaptime string is invalid"):
+        with pytest.raises(SnaptimeError, match="Snaptime string is invalid"):
             snap(dtm, snaptime)
 
     @pytest.mark.parametrize("tz", [None, ZoneInfo("America/New_York"), timezone.utc])
@@ -900,7 +901,8 @@ class TestSnapRange:
     def test_snap_range_empty_inclusive(self, dtm: datetime):
         # act/assert
         with pytest.raises(
-            ValueError, match=re.escape("The range from '@d' to '@d' is empty. An inclusive range must not be empty.")
+            SnaptimeError,
+            match=re.escape("The range from '@d' to '@d' is empty. An inclusive range must not be empty."),
         ):
             snap_range(dtm, "@d", "@d", inclusive=True)
 
@@ -908,7 +910,7 @@ class TestSnapRange:
     @pytest.mark.parametrize("inclusive", [False, True])
     def test_snap_range_reversed(self, dtm: datetime, inclusive: bool):
         # act/assert
-        with pytest.raises(ValueError, match=re.escape("The start of the range ('@d') is after the end ('-1d@d').")):
+        with pytest.raises(SnaptimeError, match=re.escape("The start of the range ('@d') is after the end ('-1d@d').")):
             snap_range(dtm, "@d", "-1d@d", inclusive=inclusive)
 
     def test_snap_range_invalid_datetime(self):
@@ -1138,7 +1140,7 @@ class TestCompile:
     @pytest.mark.parametrize("snaptime", ["@ms", "@d-h", "", "@d 2h"])
     def test_compile_invalid(self, snaptime: str):
         # act/assert
-        with pytest.raises(ValueError, match="Snaptime string is invalid"):
+        with pytest.raises(SnaptimeError, match="Snaptime string is invalid"):
             compile(snaptime)
 
     def test_compile_equal_and_hashable(self):

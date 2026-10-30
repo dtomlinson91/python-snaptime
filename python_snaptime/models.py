@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
+from python_snaptime.exceptions import SnaptimeError
+
 
 class Action(str, Enum):
     """Time Snapping Actions."""
@@ -55,10 +57,10 @@ def _verify_snap_multiple(unit: Unit, time_int: int) -> None:
     limit = _SNAP_MULTIPLE_LIMITS.get(unit)
     if limit is None:
         msg = "Snaptime string is invalid: can only snap to a multiple of seconds, minutes or hours."
-        raise ValueError(msg)
+        raise SnaptimeError(msg)
     if time_int < 1 or limit % time_int != 0:
         msg = f"Snaptime string is invalid: a snap multiple must divide {limit}, but {time_int} does not."
-        raise ValueError(msg)
+        raise SnaptimeError(msg)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -68,7 +70,7 @@ class Snaptime:
     The class converts a `str` value of `action` or `unit` to its `Action` or `Unit` member.
 
     Raises:
-        ValueError: If the configuration is not a valid snaptime operation.
+        SnaptimeError: If the configuration is not a valid snaptime operation.
     """
 
     action: Action | None = None
@@ -90,31 +92,34 @@ class Snaptime:
         """Convert the action and the unit to enums, then validate the configuration."""
         if self.action is None:
             msg = "Snaptime string is invalid: must provide either a snap `@` or time delta `+-`."
-            raise ValueError(msg)
-        # frozen dataclasses block normal attribute assignment
-        object.__setattr__(self, "action", Action(self.action))
-        if self.unit is not None:
-            object.__setattr__(self, "unit", Unit(self.unit))
+            raise SnaptimeError(msg)
+        try:
+            # frozen dataclasses block normal attribute assignment
+            object.__setattr__(self, "action", Action(self.action))
+            if self.unit is not None:
+                object.__setattr__(self, "unit", Unit(self.unit))
+        except ValueError as exc:
+            raise SnaptimeError(str(exc)) from exc
 
         if self.action == Action.SNAP:
             if self.unit is None:
                 msg = "Snaptime string is invalid: missing time unit when snapping."
-                raise ValueError(msg)
+                raise SnaptimeError(msg)
             if self.unit == Unit.MILLISECOND:
                 msg = "Snaptime string is invalid: cannot snap to nearest millisecond."
-                raise ValueError(msg)
+                raise SnaptimeError(msg)
             if self.unit == Unit.MICROSECOND:
                 msg = "Snaptime string is invalid: cannot snap to nearest microsecond."
-                raise ValueError(msg)
+                raise SnaptimeError(msg)
             if self.time_int is not None:
                 _verify_snap_multiple(self.unit, self.time_int)
         else:
             if self.time_int is None:
                 msg = "Snaptime string is invalid: missing time integer for time addition or subtraction."
-                raise ValueError(msg)
+                raise SnaptimeError(msg)
             if self.time_int < 0:
                 msg = "Snaptime string is invalid: time integer cannot be negative."
-                raise ValueError(msg)
+                raise SnaptimeError(msg)
             if self.unit is None:
                 msg = "Snaptime string is invalid: missing time unit for time addition or subtraction."
-                raise ValueError(msg)
+                raise SnaptimeError(msg)

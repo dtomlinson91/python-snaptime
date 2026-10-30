@@ -3,6 +3,7 @@ from dataclasses import FrozenInstanceError
 from datetime import datetime, timedelta
 
 import pytest
+from python_snaptime.exceptions import SnaptimeError
 from python_snaptime.models import Action, Snaptime, Unit, Weekday
 
 
@@ -98,7 +99,7 @@ class TestSnaptime:
 
         # act/assert
         with pytest.raises(
-            ValueError,
+            SnaptimeError,
             match=re.escape("Snaptime string is invalid: can only snap to a multiple of seconds, minutes or hours."),
         ):
             Snaptime(**snaptime)
@@ -113,7 +114,7 @@ class TestSnaptime:
 
         # act/assert
         with pytest.raises(
-            ValueError,
+            SnaptimeError,
             match=re.escape(
                 f"Snaptime string is invalid: a snap multiple must divide {limit}, but {time_int} does not."
             ),
@@ -236,7 +237,9 @@ class TestSnaptime:
     )
     def test_snaptime_verify_delta_negative_time_int(self, snaptime):
         # act/assert
-        with pytest.raises(ValueError, match=re.escape("Snaptime string is invalid: time integer cannot be negative.")):
+        with pytest.raises(
+            SnaptimeError, match=re.escape("Snaptime string is invalid: time integer cannot be negative.")
+        ):
             Snaptime(**snaptime)
 
     def test_snaptime_verify_delta_zero_time_int(self):

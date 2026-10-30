@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
+from python_snaptime.exceptions import SnaptimeError
 from python_snaptime.handlers import handle_timesnapping
 from python_snaptime.models import Snaptime, Weekday
 
@@ -24,12 +25,12 @@ def parse(snaptime: str) -> list[Snaptime]:
         list[Snaptime]: The snaptimes in the order that they occur in the string.
 
     Raises:
-        ValueError: If the snaptime string is invalid.
+        SnaptimeError: If the snaptime string is invalid.
     """
     invalid = re.search(r"[^@+\-\w]", snaptime)
     if invalid is not None:
         msg = f"Snaptime string is invalid: unknown character `{invalid.group()}`."
-        raise ValueError(msg)
+        raise SnaptimeError(msg)
 
     pattern = r"(([@+-]*)(\d*)(\w*))"
     matches = re.findall(pattern, snaptime)
@@ -50,7 +51,7 @@ def parse(snaptime: str) -> list[Snaptime]:
 
     if not results:
         msg = "Snaptime string is invalid"
-        raise ValueError(msg)
+        raise SnaptimeError(msg)
     return results
 
 
@@ -78,6 +79,9 @@ def parse_snaptime_string(
 
     Returns:
         pendulum.DateTime: The resulting snapped datetime.
+
+    Raises:
+        SnaptimeError: If the snaptime string is invalid.
     """
     parsed_snaptimes = parse(snaptime)
     for _snaptime in parsed_snaptimes:

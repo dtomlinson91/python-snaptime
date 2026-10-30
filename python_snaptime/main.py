@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, overload
 
 import pendulum
 
+from python_snaptime.exceptions import SnaptimeError
 from python_snaptime.handlers import handle_timesnapping
 from python_snaptime.models import Weekday
 from python_snaptime.parsers import parse, to_string
@@ -91,6 +92,10 @@ def snap(
 
     Returns:
         pendulum.DateTime | dt.datetime: The resulting snapped datetime.
+
+    Raises:
+        SnaptimeError: If the snaptime string is invalid.
+        TypeError: If `dtm` is not a `pendulum.DateTime` or a `datetime.datetime`.
     """
     return apply(dtm, parse(snap), week_start=week_start)
 
@@ -130,17 +135,18 @@ def snap_range(
             the end of the range.
 
     Raises:
-        ValueError: If the start is after the end, or if `inclusive` is True and the range is empty.
+        SnaptimeError: If a snaptime string is invalid, if the start is after the end, or if `inclusive`
+            is True and the range is empty.
     """
     start_dtm = snap(dtm, start, week_start=week_start)
     end_dtm = snap(dtm, end, week_start=week_start)
     if start_dtm > end_dtm:
         msg = f"The start of the range ({start!r}) is after the end ({end!r})."
-        raise ValueError(msg)
+        raise SnaptimeError(msg)
     if inclusive:
         if start_dtm == end_dtm:
             msg = f"The range from {start!r} to {end!r} is empty. An inclusive range must not be empty."
-            raise ValueError(msg)
+            raise SnaptimeError(msg)
         end_dtm -= dt.timedelta(microseconds=1)
     return start_dtm, end_dtm
 
@@ -240,6 +246,6 @@ def compile(snaptime: str, *, week_start: Weekday = Weekday.MONDAY) -> CompiledS
         CompiledSnaptime: The parsed snaptime string.
 
     Raises:
-        ValueError: If the snaptime string is invalid.
+        SnaptimeError: If the snaptime string is invalid.
     """
     return CompiledSnaptime(tuple(parse(snaptime)), week_start=week_start)

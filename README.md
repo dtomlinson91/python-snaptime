@@ -39,7 +39,7 @@ For example, `@d-2h` will give you two hours ago from the start of the day.
 | `QUARTER`     | `q`, `qtr`, `qtrs`, `quarter`, `quarters` |         ✅         |       ✅        |
 | `YEAR`        | `y`, `yr`, `yrs`, `year`, `years`         |         ✅         |       ✅        |
 
-A snaptime string can contain only `@`, `+`, `-`, digits and the unit strings in the table. Any other character, including a space, raises a `ValueError`.
+A snaptime string can contain only `@`, `+`, `-`, digits and the unit strings in the table. Any other character, including a space, raises a `SnaptimeError`.
 
 > [!NOTE]
 > By default, `@w` snaps to the start of the week on Monday. In Splunk, `@w` snaps to Sunday. To use a different first day of the week, set `week_start`, for example `snap(dtm, "@w", week_start=Weekday.SUNDAY)`.
@@ -137,7 +137,7 @@ pip install python-snaptime
 ```python
 import pendulum
 from python_snaptime import (
-    Weekday, apply, compile, parse, snap, snap_now, snap_range, to_string,
+    SnaptimeError, Weekday, apply, compile, parse, snap, snap_now, snap_range, to_string,
 )
 
 now = pendulum.datetime(2024, 12, 30, 18, 52)  # Monday
@@ -157,6 +157,8 @@ to_string(ops)          # "@d-2h"
 
 yesterday = compile("-1d@d")
 yesterday.apply(now)    # 2024-12-29 00:00
+
+snap(now, "@ms")        # raises SnaptimeError, a subclass of ValueError
 ```
 
 ### Advanced
