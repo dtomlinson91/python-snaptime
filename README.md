@@ -136,13 +136,15 @@ pip install python-snaptime
 
 ```python
 import pendulum
-from python_snaptime import snap
+from python_snaptime import snap, to_string
 
 now = pendulum.datetime(2024, 12, 30, 18, 52)  # Monday
 
 snap(now, "@d")                             # 2024-12-30 00:00, start of today
 snap(now, "@d-2h+10m")                      # 2024-12-29 22:10
 snap(now, "@15m")                           # 2024-12-30 18:45, 15-minute bucket
+
+to_string(ops)          # "@d-2h"
 ```
 
 ### Advanced

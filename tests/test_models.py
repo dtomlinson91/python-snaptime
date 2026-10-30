@@ -219,3 +219,65 @@ class TestSnaptime:
         # act/assert
         with pytest.raises(TypeError):
             Snaptime("@", "d")
+
+    @pytest.mark.parametrize(
+        "snaptime",
+        [{"action": "+", "unit": "h", "time_int": -2}, {"action": "-", "unit": "h", "time_int": -2}],
+    )
+    def test_snaptime_verify_delta_negative_time_int(self, snaptime):
+        # act/assert
+        with pytest.raises(ValueError, match=re.escape("Snaptime string is invalid: time integer cannot be negative.")):
+            Snaptime(**snaptime)
+
+    def test_snaptime_verify_delta_zero_time_int(self):
+        # act
+        snaptime = Snaptime(action="+", unit="h", time_int=0)
+
+        # assert
+        assert snaptime.time_int == 0
+
+
+@pytest.mark.parametrize(
+    "unit,result",
+    [
+        (Unit.MICROSECOND, "+3us"),
+        (Unit.MILLISECOND, "+3ms"),
+        (Unit.SECOND, "+3s"),
+        (Unit.MINUTE, "+3m"),
+        (Unit.HOUR, "+3h"),
+        (Unit.DAY, "+3d"),
+        (Unit.WEEK, "+3w"),
+        (Unit.MONTH, "+3mon"),
+        (Unit.QUARTER, "+3q"),
+        (Unit.YEAR, "+3y"),
+    ],
+)
+def test_snaptime_str_unit(unit, result):
+    # arrange
+    snaptime = Snaptime(action=Action.ADD, unit=unit, time_int=3)
+
+    # act
+    snaptime_str = str(snaptime)
+
+    # assert
+    assert snaptime_str == result
+
+
+@pytest.mark.parametrize(
+    "snaptime,result",
+    [
+        (Snaptime(action=Action.SNAP, unit=Unit.DAY), "@d"),
+        (Snaptime(action=Action.ADD, unit=Unit.HOUR, time_int=2), "+2h"),
+        (Snaptime(action=Action.SUB, unit=Unit.HOUR, time_int=2), "-2h"),
+        (Snaptime(action="-", unit="hours", time_int=6), "-6h"),
+        (Snaptime(action=Action.SNAP, unit=Unit.MINUTE, time_int=15), "@15m"),
+        (Snaptime(action="@", unit="seconds", time_int=30), "@30s"),
+        (Snaptime(action="@", unit="hr", time_int=1), "@1h"),
+    ],
+)
+def test_snaptime_str_action(snaptime, result):
+    # act
+    snaptime_str = str(snaptime)
+
+    # assert
+    assert snaptime_str == result

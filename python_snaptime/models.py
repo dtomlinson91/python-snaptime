@@ -63,6 +63,17 @@ class Snaptime:
     unit: Unit | None = None
     time_int: int | None = None
 
+    def __str__(self) -> str:
+        """Return the snaptime string of this snaptime, for example `@d`, `@15m` or `-2h`.
+
+        Returns:
+            str: The snaptime string, with the shortest string of the unit.
+        """
+        action = self.action.value if self.action is not None else ""
+        time_int = str(self.time_int) if self.time_int is not None else ""
+        unit = self.unit.value[0] if self.unit is not None else ""
+        return f"{action}{time_int}{unit}"
+
     def __post_init__(self) -> None:
         """Convert the action and the unit to enums, then validate the configuration."""
         if self.action is None:
@@ -88,6 +99,9 @@ class Snaptime:
         else:
             if self.time_int is None:
                 msg = "Snaptime string is invalid: missing time integer for time addition or subtraction."
+                raise ValueError(msg)
+            if self.time_int < 0:
+                msg = "Snaptime string is invalid: time integer cannot be negative."
                 raise ValueError(msg)
             if self.unit is None:
                 msg = "Snaptime string is invalid: missing time unit for time addition or subtraction."
