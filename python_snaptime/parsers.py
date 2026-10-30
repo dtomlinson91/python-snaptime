@@ -9,6 +9,8 @@ from python_snaptime.handlers import handle_timesnapping
 from python_snaptime.models import Snaptime
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     import pendulum
 
 
@@ -50,6 +52,18 @@ def parse(snaptime: str) -> list[Snaptime]:
         msg = "Snaptime string is invalid"
         raise ValueError(msg)
     return results
+
+
+def to_string(snaptimes: Iterable[Snaptime]) -> str:
+    """Convert snaptimes to a snaptime string.
+
+    Args:
+        snaptimes (Iterable[Snaptime]): The snaptimes to convert, in the order to apply them.
+
+    Returns:
+        str: The snaptime string, for example `@d-2h`.
+    """
+    return "".join(str(snaptime) for snaptime in snaptimes)
 
 
 def parse_snaptime_string(snaptime: str, datetime: pendulum.DateTime) -> pendulum.DateTime:
