@@ -1,8 +1,10 @@
 import re
 from dataclasses import FrozenInstanceError
+from datetime import datetime, timedelta
 
 import pytest
-from python_snaptime.models import Action, Snaptime, Unit
+from python_snaptime.exceptions import SnaptimeError
+from python_snaptime.models import Action, Snaptime, Unit, Weekday
 
 
 @pytest.mark.parametrize(
@@ -58,6 +60,15 @@ def test_microseconds(unit, result):
     assert unit_result == result
 
 
+@pytest.mark.parametrize("day", range(7))
+def test_weekday_matches_datetime_weekday(day: int):
+    # arrange
+    dtm = datetime(2024, 12, 30) + timedelta(days=day)
+
+    # act/assert
+    assert Weekday(dtm.weekday()).name == dtm.strftime("%A").upper()
+
+
 class TestSnaptime:
     def test_snaptime_verify_no_action(self):
         # arrange
@@ -70,13 +81,43 @@ class TestSnaptime:
         ):
             Snaptime(**snaptime)
 
-    def test_snaptime_verify_snap_no_time_int(self):
+    @pytest.mark.parametrize(
+        "unit,time_int",
+        [("s", 1), ("s", 30), ("m", 1), ("m", 15), ("m", 60), ("h", 1), ("h", 6), ("h", 24), (Unit.MINUTE, 15)],
+    )
+    def test_snaptime_verify_snap_multiple(self, unit, time_int):
+        # act
+        snaptime = Snaptime(action="@", unit=unit, time_int=time_int)
+
+        # assert
+        assert snaptime.time_int == time_int
+
+    @pytest.mark.parametrize("unit", ["d", "w", "mon", "q", "y", Unit.DAY])
+    def test_snaptime_verify_snap_multiple_unit(self, unit):
         # arrange
-        snaptime = {"action": "@", "time_int": 2}
+        snaptime = {"action": "@", "unit": unit, "time_int": 2}
 
         # act/assert
         with pytest.raises(
-            ValueError, match=re.escape("Snaptime string is invalid: cannot use a time integer when snapping.")
+            SnaptimeError,
+            match=re.escape("Snaptime string is invalid: can only snap to a multiple of seconds, minutes or hours."),
+        ):
+            Snaptime(**snaptime)
+
+    @pytest.mark.parametrize(
+        "unit,time_int,limit",
+        [("s", 7, 60), ("m", 7, 60), ("m", 0, 60), ("m", -15, 60), ("m", 120, 60), ("h", 5, 24), ("h", 48, 24)],
+    )
+    def test_snaptime_verify_snap_multiple_divisor(self, unit, time_int, limit):
+        # arrange
+        snaptime = {"action": "@", "unit": unit, "time_int": time_int}
+
+        # act/assert
+        with pytest.raises(
+            SnaptimeError,
+            match=re.escape(
+                f"Snaptime string is invalid: a snap multiple must divide {limit}, but {time_int} does not."
+            ),
         ):
             Snaptime(**snaptime)
 
@@ -189,3 +230,67 @@ class TestSnaptime:
         # act/assert
         with pytest.raises(TypeError):
             Snaptime("@", "d")
+
+    @pytest.mark.parametrize(
+        "snaptime",
+        [{"action": "+", "unit": "h", "time_int": -2}, {"action": "-", "unit": "h", "time_int": -2}],
+    )
+    def test_snaptime_verify_delta_negative_time_int(self, snaptime):
+        # act/assert
+        with pytest.raises(
+            SnaptimeError, match=re.escape("Snaptime string is invalid: time integer cannot be negative.")
+        ):
+            Snaptime(**snaptime)
+
+    def test_snaptime_verify_delta_zero_time_int(self):
+        # act
+        snaptime = Snaptime(action="+", unit="h", time_int=0)
+
+        # assert
+        assert snaptime.time_int == 0
+
+
+@pytest.mark.parametrize(
+    "unit,result",
+    [
+        (Unit.MICROSECOND, "+3us"),
+        (Unit.MILLISECOND, "+3ms"),
+        (Unit.SECOND, "+3s"),
+        (Unit.MINUTE, "+3m"),
+        (Unit.HOUR, "+3h"),
+        (Unit.DAY, "+3d"),
+        (Unit.WEEK, "+3w"),
+        (Unit.MONTH, "+3mon"),
+        (Unit.QUARTER, "+3q"),
+        (Unit.YEAR, "+3y"),
+    ],
+)
+def test_snaptime_str_unit(unit, result):
+    # arrange
+    snaptime = Snaptime(action=Action.ADD, unit=unit, time_int=3)
+
+    # act
+    snaptime_str = str(snaptime)
+
+    # assert
+    assert snaptime_str == result
+
+
+@pytest.mark.parametrize(
+    "snaptime,result",
+    [
+        (Snaptime(action=Action.SNAP, unit=Unit.DAY), "@d"),
+        (Snaptime(action=Action.ADD, unit=Unit.HOUR, time_int=2), "+2h"),
+        (Snaptime(action=Action.SUB, unit=Unit.HOUR, time_int=2), "-2h"),
+        (Snaptime(action="-", unit="hours", time_int=6), "-6h"),
+        (Snaptime(action=Action.SNAP, unit=Unit.MINUTE, time_int=15), "@15m"),
+        (Snaptime(action="@", unit="seconds", time_int=30), "@30s"),
+        (Snaptime(action="@", unit="hr", time_int=1), "@1h"),
+    ],
+)
+def test_snaptime_str_action(snaptime, result):
+    # act
+    snaptime_str = str(snaptime)
+
+    # assert
+    assert snaptime_str == result

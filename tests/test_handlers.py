@@ -2,7 +2,7 @@ import pendulum
 import pytest
 from pytest_mock import MockerFixture
 from python_snaptime import handlers
-from python_snaptime.models import Action, Snaptime, Unit
+from python_snaptime.models import Action, Snaptime, Unit, Weekday
 
 
 class TestSnapCases:
@@ -60,6 +60,41 @@ class TestSnapCases:
         # assert
         assert result == pendulum.datetime(2024, 12, 30, 0, 0, 0, 000000)
 
+    @pytest.mark.parametrize(
+        "week_start,result_day",
+        [
+            (Weekday.MONDAY, 30),
+            (Weekday.TUESDAY, 24),
+            (Weekday.WEDNESDAY, 25),
+            (Weekday.THURSDAY, 26),
+            (Weekday.FRIDAY, 27),
+            (Weekday.SATURDAY, 28),
+            (Weekday.SUNDAY, 29),
+        ],
+    )
+    def test_handle_snap_cases_week_start(self, start_time, week_start: Weekday, result_day: int):
+        # arrange
+        snap = Snaptime(action=Action.SNAP, unit=Unit.WEEK, time_int=None)
+
+        # act
+        result = handlers._handle_snap_cases(snap, start_time, week_start)
+
+        # assert
+        assert result == pendulum.datetime(2024, 12, result_day, 0, 0, 0, 000000)
+
+    @pytest.mark.parametrize("week_start", list(Weekday))
+    def test_handle_snap_cases_week_start_on_first_day(self, week_start: Weekday):
+        # arrange
+        snap = Snaptime(action=Action.SNAP, unit=Unit.WEEK, time_int=None)
+        dtm = pendulum.datetime(2024, 12, 30, 13, 1, 10, 999999).add(days=week_start)
+
+        # act
+        result = handlers._handle_snap_cases(snap, dtm, week_start)
+
+        # assert
+        assert result.weekday() == week_start
+        assert result == dtm.start_of("day")
+
     def test_handle_snap_cases_month(self, start_time):
         # arrange
         snap = Snaptime(action=Action.SNAP, unit=Unit.MONTH, time_int=None)
@@ -90,14 +125,86 @@ class TestSnapCases:
         # assert
         assert result == pendulum.datetime(2024, 1, 1, 0, 0, 0, 000000)
 
-    def test_handle_snap_cases_with_time_int(self, start_time):
+    @pytest.mark.parametrize(
+        "unit,time_int,result",
+        [
+            (Unit.SECOND, 1, pendulum.datetime(2024, 12, 30, 13, 1, 10)),
+            (Unit.SECOND, 15, pendulum.datetime(2024, 12, 30, 13, 1, 0)),
+            (Unit.SECOND, 30, pendulum.datetime(2024, 12, 30, 13, 1, 0)),
+            (Unit.MINUTE, 1, pendulum.datetime(2024, 12, 30, 13, 1, 0)),
+            (Unit.MINUTE, 15, pendulum.datetime(2024, 12, 30, 13, 0, 0)),
+            (Unit.MINUTE, 60, pendulum.datetime(2024, 12, 30, 13, 0, 0)),
+            (Unit.HOUR, 1, pendulum.datetime(2024, 12, 30, 13, 0, 0)),
+            (Unit.HOUR, 6, pendulum.datetime(2024, 12, 30, 12, 0, 0)),
+            (Unit.HOUR, 24, pendulum.datetime(2024, 12, 30, 0, 0, 0)),
+        ],
+    )
+    def test_handle_snap_cases_multiple(self, start_time, unit: Unit, time_int: int, result: pendulum.DateTime):
         # arrange
-        snap = Snaptime(action=Action.SNAP, unit=Unit.SECOND, time_int=None)
-        object.__setattr__(snap, "time_int", 5)
+        snap = Snaptime(action=Action.SNAP, unit=unit, time_int=time_int)
 
         # act/assert
-        with pytest.raises(ValueError, match="Time integer is not allowed for SNAP action."):
+        assert handlers._handle_snap_cases(snap, start_time) == result
+
+    @pytest.mark.parametrize("unit", [Unit.DAY, Unit.WEEK, Unit.MONTH, Unit.QUARTER, Unit.YEAR])
+    def test_handle_snap_cases_with_time_int(self, start_time, unit: Unit):
+        # arrange
+        snap = Snaptime(action=Action.SNAP, unit=unit, time_int=None)
+        object.__setattr__(snap, "time_int", 2)
+
+        # act/assert
+        with pytest.raises(
+            ValueError, match="Time integer is allowed for SNAP action only with seconds, minutes or hours."
+        ):
             handlers._handle_snap_cases(snap, start_time)
+
+    @pytest.mark.parametrize(
+        "dtm,unit,time_int,result",
+        [
+            (
+                pendulum.datetime(2024, 10, 27, 1, 52, tz="Europe/London", fold=0),
+                Unit.MINUTE,
+                15,
+                pendulum.datetime(2024, 10, 27, 1, 45, tz="Europe/London", fold=0),
+            ),
+            (
+                pendulum.datetime(2024, 10, 27, 1, 52, tz="Europe/London", fold=1),
+                Unit.MINUTE,
+                15,
+                pendulum.datetime(2024, 10, 27, 1, 45, tz="Europe/London", fold=1),
+            ),
+            (
+                pendulum.datetime(2024, 10, 27, 1, 30, tz="Europe/London", fold=1),
+                Unit.HOUR,
+                2,
+                pendulum.datetime(2024, 10, 27, 0, 0, tz="Europe/London"),
+            ),
+            (
+                pendulum.datetime(2024, 10, 27, 3, 30, tz="Europe/London"),
+                Unit.HOUR,
+                3,
+                pendulum.datetime(2024, 10, 27, 3, 0, tz="Europe/London"),
+            ),
+            (
+                pendulum.datetime(2024, 3, 31, 2, 30, tz="Europe/London"),
+                Unit.HOUR,
+                2,
+                pendulum.datetime(2024, 3, 31, 2, 0, tz="Europe/London"),
+            ),
+        ],
+    )
+    def test_handle_snap_cases_multiple_across_dst(
+        self, dtm: pendulum.DateTime, unit: Unit, time_int: int, result: pendulum.DateTime
+    ):
+        # arrange
+        snap = Snaptime(action=Action.SNAP, unit=unit, time_int=time_int)
+
+        # act
+        snapped = handlers._handle_snap_cases(snap, dtm)
+
+        # assert
+        assert snapped == result
+        assert snapped.utcoffset() == result.utcoffset()
 
 
 class TestAdditionCases:
@@ -374,7 +481,20 @@ class TestHandleCases:
         handlers.handle_timesnapping(snap, dtm)
 
         # assert
-        mock_handle_cases.assert_called_once_with(snap, dtm)
+        mock_handle_cases.assert_called_once_with(snap, dtm, Weekday.MONDAY)
+
+    def test_handle_cases_snap_week_start(self, mocker: MockerFixture):
+        # arrange
+        snap = Snaptime(action=Action.SNAP, unit=Unit.WEEK)
+        dtm = pendulum.datetime(2024, 12, 30, 13, 1, 10, 999)
+
+        mock_handle_cases = mocker.patch.object(handlers, "_handle_snap_cases")
+
+        # act
+        handlers.handle_timesnapping(snap, dtm, week_start=Weekday.SUNDAY)
+
+        # assert
+        mock_handle_cases.assert_called_once_with(snap, dtm, Weekday.SUNDAY)
 
     def test_handle_cases_delta(self, mocker: MockerFixture):
         # arrange

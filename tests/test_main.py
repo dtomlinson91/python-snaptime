@@ -1,11 +1,26 @@
 import re
 import time
+from dataclasses import FrozenInstanceError
 from datetime import date, datetime, timedelta, timezone, tzinfo
 from zoneinfo import ZoneInfo
 
 import pendulum
 import pytest
-from python_snaptime import snap
+import python_snaptime
+from python_snaptime import (
+    Action,
+    CompiledSnaptime,
+    Snaptime,
+    SnaptimeError,
+    Unit,
+    Weekday,
+    apply,
+    compile,
+    parse,
+    snap,
+    snap_now,
+    snap_range,
+)
 
 
 class TestSnap:
@@ -494,6 +509,60 @@ class TestSnap:
         assert result == datetime(2024, 3, 31, 1, 0, 0)
 
     @pytest.mark.parametrize(
+        "week_start,snap_dtm",
+        [
+            (Weekday.MONDAY, pendulum.datetime(2024, 12, 30)),
+            (Weekday.SUNDAY, pendulum.datetime(2024, 12, 29)),
+            (Weekday.SATURDAY, pendulum.datetime(2024, 12, 28)),
+            (Weekday.TUESDAY, pendulum.datetime(2024, 12, 31)),
+        ],
+    )
+    def test_snap_week_start_pendulum(self, week_start: Weekday, snap_dtm: pendulum.DateTime):
+        # arrange
+        dtm = pendulum.datetime(2024, 12, 31)
+
+        # act
+        result = snap(dtm, "@w", week_start=week_start)
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result == snap_dtm
+
+    def test_snap_week_start_default_is_monday(self):
+        # act
+        result = snap(pendulum.datetime(2024, 12, 31), "@w")
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result == pendulum.datetime(2024, 12, 30)
+
+    def test_snap_week_start_datetime(self, datetime_dtm: datetime):
+        # act
+        result = snap(datetime_dtm, "@w-1d", week_start=Weekday.SUNDAY)
+
+        # assert
+        assert type(result) is datetime
+        assert result == datetime(2024, 12, 28, 0, 0, 0)
+
+    def test_snap_week_start_datetime_timezone(self, datetime_dtm_timezone: datetime):
+        # act
+        result = snap(datetime_dtm_timezone, "@w", week_start=Weekday.WEDNESDAY)
+
+        # assert
+        assert type(result) is datetime
+        assert result == datetime(2024, 12, 25, 0, 0, 0, tzinfo=ZoneInfo("America/New_York"))
+        assert result.tzinfo == ZoneInfo("America/New_York")
+
+    def test_snap_week_start_pendulum_timezone(self, pendulum_dtm_timezone: pendulum.DateTime):
+        # act
+        result = snap(pendulum_dtm_timezone, "@w", week_start=Weekday.WEDNESDAY)
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result == pendulum.datetime(2024, 12, 25, tz=pendulum.timezone("America/New_York"))
+        assert result.timezone_name == "America/New_York"
+
+    @pytest.mark.parametrize(
         "dtm,expected_type",
         [
             (pendulum.datetime(2024, 12, 30, 13, 1, 10), pendulum.DateTime),
@@ -509,3 +578,706 @@ class TestSnap:
 
         # assert
         assert type(result) is expected_type
+
+
+class TestSnapMultiple:
+    @pytest.fixture()
+    def dtm(self):
+        return pendulum.datetime(2024, 12, 30, 18, 52, 37, 123456)
+
+    @pytest.mark.parametrize(
+        "snaptime,snap_dtm",
+        [
+            ("@15m", pendulum.datetime(2024, 12, 30, 18, 45)),
+            ("@30m", pendulum.datetime(2024, 12, 30, 18, 30)),
+            ("@10s", pendulum.datetime(2024, 12, 30, 18, 52, 30)),
+            ("@4h", pendulum.datetime(2024, 12, 30, 16, 0)),
+            ("@1m", pendulum.datetime(2024, 12, 30, 18, 52)),
+            ("@d+7h@6h", pendulum.datetime(2024, 12, 30, 6, 0)),
+            ("@15m-1h", pendulum.datetime(2024, 12, 30, 17, 45)),
+        ],
+    )
+    def test_snap_multiple(self, dtm: pendulum.DateTime, snaptime: str, snap_dtm: pendulum.DateTime):
+        # act
+        result = snap(dtm, snaptime)
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result == snap_dtm
+
+    def test_snap_multiple_one_is_snap(self, dtm: pendulum.DateTime):
+        # act/assert
+        assert snap(dtm, "@1m") == snap(dtm, "@m")
+        assert snap(dtm, "@1s") == snap(dtm, "@s")
+        assert snap(dtm, "@1h") == snap(dtm, "@h")
+
+    @pytest.mark.parametrize("snaptime", ["@7m", "@2d", "@0m", "@5h", "@2w", "@2mon", "@2q", "@2y"])
+    def test_snap_multiple_invalid(self, dtm: pendulum.DateTime, snaptime: str):
+        # act/assert
+        with pytest.raises(SnaptimeError, match="Snaptime string is invalid"):
+            snap(dtm, snaptime)
+
+    @pytest.mark.parametrize("tz", [None, ZoneInfo("America/New_York"), timezone.utc])
+    def test_snap_multiple_datetime(self, tz: tzinfo | None):
+        # arrange
+        dtm = datetime(2024, 12, 30, 18, 52, 37, 123456, tzinfo=tz)
+
+        # act
+        result = snap(dtm, "@15m")
+
+        # assert
+        assert type(result) is datetime
+        assert result.tzinfo is tz
+        assert result == datetime(2024, 12, 30, 18, 45, tzinfo=tz)
+
+    @pytest.mark.parametrize(
+        "fold,utcoffset",
+        [(0, timedelta(hours=1)), (1, timedelta(0))],
+    )
+    def test_snap_multiple_pendulum_across_dst(self, fold: int, utcoffset: timedelta):
+        # arrange
+        dtm = pendulum.datetime(2024, 10, 27, 1, 52, tz="Europe/London", fold=fold)
+
+        # act
+        result = snap(dtm, "@15m")
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result.naive() == pendulum.naive(2024, 10, 27, 1, 45)
+        assert result.utcoffset() == utcoffset
+
+    @pytest.mark.parametrize(
+        "fold,utcoffset",
+        [(0, timedelta(hours=1)), (1, timedelta(0))],
+    )
+    def test_snap_multiple_datetime_across_dst(self, fold: int, utcoffset: timedelta):
+        # arrange
+        tz = ZoneInfo("Europe/London")
+        dtm = datetime(2024, 10, 27, 1, 52, tzinfo=tz, fold=fold)
+
+        # act
+        result = snap(dtm, "@15m")
+
+        # assert
+        assert type(result) is datetime
+        assert result.tzinfo is tz
+        assert result.replace(tzinfo=None) == datetime(2024, 10, 27, 1, 45)
+        assert result.utcoffset() == utcoffset
+
+
+class TestApply:
+    @pytest.mark.parametrize(
+        "dtm,expected_type",
+        [
+            (pendulum.datetime(2024, 12, 30, 13, 1, 10, 999999), pendulum.DateTime),
+            (pendulum.datetime(2024, 12, 30, 13, 1, 10, 999999, tz="Europe/London"), pendulum.DateTime),
+            (datetime(2024, 12, 30, 13, 1, 10, 999999), datetime),
+            (datetime(2024, 12, 30, 13, 1, 10, 999999, tzinfo=ZoneInfo("America/New_York")), datetime),
+        ],
+        ids=["pendulum", "pendulum_timezone", "datetime_naive", "datetime_aware"],
+    )
+    def test_apply_matches_snap(self, dtm: datetime, expected_type: type[datetime]):
+        # act
+        result = apply(dtm, parse("@d-2h+10m"))
+
+        # assert
+        assert result == snap(dtm, "@d-2h+10m")
+        assert type(result) is expected_type
+        assert result.tzinfo is dtm.tzinfo
+
+    @pytest.mark.parametrize(
+        "dtm,snap_dtm,expected_type",
+        [
+            (
+                pendulum.datetime(2024, 12, 30, 18, 52, 37, 123456),
+                pendulum.datetime(2024, 12, 30, 18, 45),
+                pendulum.DateTime,
+            ),
+            (datetime(2024, 12, 30, 18, 52, 37, 123456), datetime(2024, 12, 30, 18, 45), datetime),
+            (
+                datetime(2024, 12, 30, 18, 52, 37, 123456, tzinfo=ZoneInfo("Europe/London")),
+                datetime(2024, 12, 30, 18, 45, tzinfo=ZoneInfo("Europe/London")),
+                datetime,
+            ),
+        ],
+        ids=["pendulum", "datetime_naive", "datetime_aware"],
+    )
+    def test_apply_snap_multiple(self, dtm: datetime, snap_dtm: datetime, expected_type: type[datetime]):
+        # arrange
+        snaptimes = parse("@15m")
+
+        # act
+        result = apply(dtm, snaptimes)
+
+        # assert
+        assert snaptimes == [Snaptime(action=Action.SNAP, unit=Unit.MINUTE, time_int=15)]
+        assert result == snap_dtm
+        assert result == snap(dtm, "@15m")
+        assert type(result) is expected_type
+        assert result.tzinfo is dtm.tzinfo
+
+    @pytest.mark.parametrize(
+        "dtm,snap_dtm,expected_type",
+        [
+            (pendulum.datetime(2024, 12, 30, 18, 52), pendulum.datetime(2024, 12, 29, 22, 10), pendulum.DateTime),
+            (datetime(2024, 12, 30, 18, 52), datetime(2024, 12, 29, 22, 10), datetime),
+            (
+                datetime(2024, 12, 30, 18, 52, tzinfo=ZoneInfo("Europe/London")),
+                datetime(2024, 12, 29, 22, 10, tzinfo=ZoneInfo("Europe/London")),
+                datetime,
+            ),
+        ],
+        ids=["pendulum", "datetime_naive", "datetime_aware"],
+    )
+    def test_apply_snaptimes_without_string(self, dtm: datetime, snap_dtm: datetime, expected_type: type[datetime]):
+        # arrange
+        snaptimes = (
+            Snaptime(action=Action.SNAP, unit=Unit.DAY),
+            Snaptime(action=Action.SUB, unit=Unit.HOUR, time_int=2),
+            Snaptime(action=Action.ADD, unit=Unit.MINUTE, time_int=10),
+        )
+
+        # act
+        result = apply(dtm, snaptimes)
+
+        # assert
+        assert result == snap_dtm
+        assert type(result) is expected_type
+
+    def test_apply_parsed_snaptimes_many_times(self):
+        # arrange
+        snaptimes = parse("@d-2h")
+        tz = ZoneInfo("Europe/London")
+        dtms = [
+            pendulum.datetime(2024, 12, 30, 18, 52),
+            datetime(2025, 3, 1, 0, 30),
+            datetime(2025, 3, 1, 0, 30, tzinfo=tz),
+        ]
+
+        # act
+        results = [apply(dtm, snaptimes) for dtm in dtms]
+
+        # assert
+        assert results == [
+            pendulum.datetime(2024, 12, 29, 22, 0),
+            datetime(2025, 2, 28, 22, 0),
+            datetime(2025, 2, 28, 22, 0, tzinfo=tz),
+        ]
+        assert [type(result) for result in results] == [pendulum.DateTime, datetime, datetime]
+
+    @pytest.mark.parametrize(
+        "dtm,expected_type",
+        [
+            (pendulum.datetime(2024, 12, 30, 13, 1, 10, 999999), pendulum.DateTime),
+            (datetime(2024, 12, 30, 13, 1, 10, 999999), datetime),
+            (datetime(2024, 12, 30, 13, 1, 10, 999999, tzinfo=ZoneInfo("America/New_York")), datetime),
+        ],
+        ids=["pendulum", "datetime_naive", "datetime_aware"],
+    )
+    def test_apply_no_snaptimes(self, dtm: datetime, expected_type: type[datetime]):
+        # act
+        result = apply(dtm, [])
+
+        # assert
+        assert result == dtm
+        assert type(result) is expected_type
+        assert result.tzinfo is dtm.tzinfo
+
+    def test_apply_invalid_datetime(self):
+        # arrange
+        dtm = date(2024, 12, 30)
+
+        # act/assert
+        with pytest.raises(
+            TypeError, match=re.escape("Invalid datetime type. Must be pendulum.DateTime or datetime.datetime.")
+        ):
+            apply(dtm, parse("@d"))
+
+    def test_apply_exported_from_package(self):
+        # assert
+        assert python_snaptime.apply is apply
+        assert "apply" in python_snaptime.__all__
+
+    @pytest.mark.parametrize(
+        "dtm",
+        [
+            pendulum.datetime(2024, 12, 31, 13, 1, 10),
+            pendulum.datetime(2024, 12, 31, 13, 1, 10, tz="America/New_York"),
+            datetime(2024, 12, 31, 13, 1, 10),
+            datetime(2024, 12, 31, 13, 1, 10, tzinfo=ZoneInfo("America/New_York")),
+        ],
+        ids=["pendulum", "pendulum_timezone", "datetime_naive", "datetime_aware"],
+    )
+    @pytest.mark.parametrize(
+        "week_start,day",
+        [(None, 30), (Weekday.MONDAY, 30), (Weekday.SUNDAY, 29), (Weekday.TUESDAY, 31)],
+        ids=["default", "monday", "sunday", "tuesday"],
+    )
+    def test_apply_week_start(self, dtm: datetime, week_start: Weekday | None, day: int):
+        # arrange
+        snaptimes = parse("@w")
+
+        # act
+        result = apply(dtm, snaptimes) if week_start is None else apply(dtm, snaptimes, week_start=week_start)
+
+        # assert
+        assert type(result) is type(dtm)
+        assert result == dtm.replace(day=day, hour=0, minute=0, second=0)
+        assert result.utcoffset() == dtm.utcoffset()
+
+
+class TestSnapRange:
+    @pytest.mark.parametrize(
+        "dtm",
+        [
+            pendulum.datetime(2024, 12, 30, 18),
+            pendulum.datetime(2024, 12, 30, 18, tz=pendulum.timezone("America/New_York")),
+            datetime(2024, 12, 30, 18),
+            datetime(2024, 12, 30, 18, tzinfo=ZoneInfo("America/New_York")),
+            datetime(2024, 12, 30, 18, tzinfo=timezone(timedelta(hours=5, minutes=30))),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "start,end,inclusive,start_delta,end_delta",
+        [
+            ("-1d@d", "@d", False, timedelta(days=-1), timedelta(0)),
+            ("-1d@d", "@d", True, timedelta(days=-1), timedelta(microseconds=-1)),
+            ("@d", "@d", False, timedelta(0), timedelta(0)),
+            ("@d", "@d+1us", True, timedelta(0), timedelta(0)),
+        ],
+    )
+    def test_snap_range(
+        self,
+        dtm: datetime,
+        start: str,
+        end: str,
+        inclusive: bool,
+        start_delta: timedelta,
+        end_delta: timedelta,
+    ):
+        # arrange
+        midnight = dtm.replace(hour=0)
+
+        # act
+        result = snap_range(dtm, start, end, inclusive=inclusive)
+
+        # assert
+        assert result == (midnight + start_delta, midnight + end_delta)
+        assert type(result) is tuple
+        assert len(result) == 2
+        for result_dtm in result:
+            assert type(result_dtm) is type(dtm)
+            assert result_dtm.tzinfo is dtm.tzinfo
+
+    def test_snap_range_pendulum(self):
+        # arrange
+        dtm = pendulum.datetime(2024, 12, 30, 18)
+
+        # act
+        result = snap_range(dtm, "-1d@d", "@d", inclusive=True)
+
+        # assert
+        assert result == (pendulum.datetime(2024, 12, 29), pendulum.datetime(2024, 12, 29, 23, 59, 59, 999999))
+        assert all(type(result_dtm) is pendulum.DateTime for result_dtm in result)
+        assert all(result_dtm.tzinfo == pendulum.UTC for result_dtm in result)
+
+    @pytest.mark.parametrize(
+        "tz",
+        [None, ZoneInfo("America/New_York"), timezone.utc, timezone(timedelta(hours=5, minutes=30))],
+    )
+    def test_snap_range_datetime(self, tz: tzinfo | None):
+        # arrange
+        dtm = datetime(2024, 12, 30, 18, tzinfo=tz)
+
+        # act
+        result = snap_range(dtm, "-1d@d", "@d", inclusive=True)
+
+        # assert
+        assert result == (datetime(2024, 12, 29, tzinfo=tz), datetime(2024, 12, 29, 23, 59, 59, 999999, tzinfo=tz))
+        assert all(type(result_dtm) is datetime for result_dtm in result)
+        assert all(result_dtm.tzinfo is tz for result_dtm in result)
+
+    @pytest.mark.parametrize("dtm", [pendulum.datetime(2024, 12, 30, 18), datetime(2024, 12, 30, 18)])
+    def test_snap_range_empty_inclusive(self, dtm: datetime):
+        # act/assert
+        with pytest.raises(
+            SnaptimeError,
+            match=re.escape("The range from '@d' to '@d' is empty. An inclusive range must not be empty."),
+        ):
+            snap_range(dtm, "@d", "@d", inclusive=True)
+
+    @pytest.mark.parametrize("dtm", [pendulum.datetime(2024, 12, 30, 18), datetime(2024, 12, 30, 18)])
+    @pytest.mark.parametrize("inclusive", [False, True])
+    def test_snap_range_reversed(self, dtm: datetime, inclusive: bool):
+        # act/assert
+        with pytest.raises(SnaptimeError, match=re.escape("The start of the range ('@d') is after the end ('-1d@d').")):
+            snap_range(dtm, "@d", "-1d@d", inclusive=inclusive)
+
+    def test_snap_range_invalid_datetime(self):
+        # act/assert
+        with pytest.raises(TypeError, match=re.escape("Invalid datetime type.")):
+            snap_range(date(2024, 12, 30), "-1d@d", "@d")
+
+    @pytest.mark.parametrize(
+        "dtm",
+        [
+            pendulum.datetime(2024, 12, 31, 18),
+            pendulum.datetime(2024, 12, 31, 18, tz="America/New_York"),
+            datetime(2024, 12, 31, 18),
+            datetime(2024, 12, 31, 18, tzinfo=ZoneInfo("America/New_York")),
+        ],
+        ids=["pendulum", "pendulum_timezone", "datetime_naive", "datetime_aware"],
+    )
+    @pytest.mark.parametrize(
+        "inclusive,end_delta",
+        [(False, timedelta(0)), (True, timedelta(microseconds=-1))],
+    )
+    def test_snap_range_week_start(self, dtm: datetime, inclusive: bool, end_delta: timedelta):
+        # arrange
+        sunday = dtm.replace(day=29, hour=0)
+
+        # act
+        result = snap_range(dtm, "@w-1w", "@w", inclusive=inclusive, week_start=Weekday.SUNDAY)
+
+        # assert
+        assert result == (sunday - timedelta(weeks=1), sunday + end_delta)
+        for result_dtm in result:
+            assert type(result_dtm) is type(dtm)
+            assert result_dtm.tzinfo == dtm.tzinfo
+
+    def test_snap_range_week_start_default_is_monday(self):
+        # act
+        result = snap_range(pendulum.datetime(2024, 12, 31, 18), "@w-1w", "@w")
+
+        # assert
+        assert result == (pendulum.datetime(2024, 12, 23), pendulum.datetime(2024, 12, 30))
+        assert all(type(result_dtm) is pendulum.DateTime for result_dtm in result)
+
+
+class TestSnapNow:
+    @pytest.fixture(autouse=True)
+    def frozen_now(self, monkeypatch: pytest.MonkeyPatch):
+        frozen = pendulum.datetime(2024, 12, 30, 18, 52, 30, 123456, tz="UTC")
+        monkeypatch.setattr(pendulum, "now", lambda tz=None: frozen.in_timezone(tz))
+
+    def test_snap_now_default_timezone_is_utc(self):
+        # act
+        result = snap_now("@d")
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result == pendulum.datetime(2024, 12, 30, tz="UTC")
+        assert result.timezone_name == "UTC"
+
+    def test_snap_now_timezone_string(self):
+        # act
+        result = snap_now("@h", tz="Europe/London")
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result == pendulum.datetime(2024, 12, 30, 18, tz="Europe/London")
+        assert result.timezone_name == "Europe/London"
+
+    @pytest.mark.parametrize(
+        "tz,snaptime,snap_dtm",
+        [
+            ("Asia/Tokyo", "@d", pendulum.datetime(2024, 12, 31, tz="Asia/Tokyo")),
+            (
+                pendulum.timezone("America/New_York"),
+                "@d-2h",
+                pendulum.datetime(2024, 12, 29, 22, tz="America/New_York"),
+            ),
+            (pendulum.timezone(-36000), "@m+5m", pendulum.datetime(2024, 12, 30, 8, 57, tz=pendulum.timezone(-36000))),
+        ],
+    )
+    def test_snap_now_pendulum_timezone(self, tz: str | tzinfo, snaptime: str, snap_dtm: pendulum.DateTime):
+        # act
+        result = snap_now(snaptime, tz=tz)
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result == snap_dtm
+        assert result.utcoffset() == snap_dtm.utcoffset()
+
+    @pytest.mark.parametrize(
+        "tz,snaptime,snap_dtm",
+        [
+            (ZoneInfo("Asia/Tokyo"), "@d", datetime(2024, 12, 31, tzinfo=ZoneInfo("Asia/Tokyo"))),
+            (ZoneInfo("America/New_York"), "@d-2h", datetime(2024, 12, 29, 22, tzinfo=ZoneInfo("America/New_York"))),
+            (
+                timezone(timedelta(hours=-10)),
+                "@m+5m",
+                datetime(2024, 12, 30, 8, 57, tzinfo=timezone(timedelta(hours=-10))),
+            ),
+            (timezone.utc, "@h", datetime(2024, 12, 30, 18, tzinfo=timezone.utc)),
+        ],
+    )
+    def test_snap_now_datetime_timezone(self, tz: tzinfo, snaptime: str, snap_dtm: datetime):
+        # act
+        result = snap_now(snaptime, tz=tz)
+
+        # assert
+        assert type(result) is datetime
+        assert result == snap_dtm
+        assert result.utcoffset() == snap_dtm.utcoffset()
+        assert result.tzinfo is tz
+
+    @pytest.mark.parametrize(
+        "tz,week_start,snap_dtm",
+        [
+            (None, Weekday.SATURDAY, pendulum.datetime(2024, 12, 28, tz="UTC")),
+            ("America/New_York", Weekday.SUNDAY, pendulum.datetime(2024, 12, 29, tz="America/New_York")),
+            ("Asia/Tokyo", Weekday.TUESDAY, pendulum.datetime(2024, 12, 31, tz="Asia/Tokyo")),
+        ],
+    )
+    def test_snap_now_week_start_pendulum(self, tz: str | None, week_start: Weekday, snap_dtm: pendulum.DateTime):
+        # act
+        result = snap_now("@w", tz=tz, week_start=week_start)
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result == snap_dtm
+        assert result.timezone_name == snap_dtm.timezone_name
+
+    @pytest.mark.parametrize(
+        "tz,week_start,snap_dtm",
+        [
+            (ZoneInfo("America/New_York"), Weekday.SUNDAY, datetime(2024, 12, 29, tzinfo=ZoneInfo("America/New_York"))),
+            (ZoneInfo("Asia/Tokyo"), Weekday.TUESDAY, datetime(2024, 12, 31, tzinfo=ZoneInfo("Asia/Tokyo"))),
+            (timezone.utc, Weekday.SATURDAY, datetime(2024, 12, 28, tzinfo=timezone.utc)),
+        ],
+    )
+    def test_snap_now_week_start_datetime(self, tz: tzinfo, week_start: Weekday, snap_dtm: datetime):
+        # act
+        result = snap_now("@w", tz=tz, week_start=week_start)
+
+        # assert
+        assert type(result) is datetime
+        assert result == snap_dtm
+        assert result.tzinfo is tz
+
+    def test_snap_now_week_start_default_is_monday(self):
+        # act
+        result = snap_now("@w", tz=ZoneInfo("Asia/Tokyo"))
+
+        # assert
+        assert type(result) is datetime
+        assert result == datetime(2024, 12, 30, tzinfo=ZoneInfo("Asia/Tokyo"))
+
+
+class TestCompile:
+    @pytest.mark.parametrize(
+        "dtm,snap_dtm,expected_type",
+        [
+            (pendulum.datetime(2024, 12, 30, 18, 52), pendulum.datetime(2024, 12, 29), pendulum.DateTime),
+            (
+                pendulum.datetime(2024, 12, 30, 18, 52, tz="Europe/London"),
+                pendulum.datetime(2024, 12, 29, tz="Europe/London"),
+                pendulum.DateTime,
+            ),
+            (datetime(2024, 12, 30, 18, 52), datetime(2024, 12, 29), datetime),
+            (
+                datetime(2024, 12, 30, 18, 52, tzinfo=ZoneInfo("America/New_York")),
+                datetime(2024, 12, 29, tzinfo=ZoneInfo("America/New_York")),
+                datetime,
+            ),
+        ],
+        ids=["pendulum", "pendulum_timezone", "datetime_naive", "datetime_aware"],
+    )
+    def test_compile_apply_matches_snap(self, dtm: datetime, snap_dtm: datetime, expected_type: type[datetime]):
+        # act
+        result = compile("-1d@d").apply(dtm)
+
+        # assert
+        assert result == snap_dtm
+        assert result == snap(dtm, "-1d@d")
+        assert type(result) is expected_type
+        assert result.tzinfo is dtm.tzinfo
+
+    def test_compile_apply_many_times(self):
+        # arrange
+        compiled = compile("@d-2h")
+        tz = ZoneInfo("Europe/London")
+        dtms = [
+            pendulum.datetime(2024, 12, 30, 18, 52),
+            datetime(2025, 3, 1, 0, 30),
+            datetime(2025, 3, 1, 0, 30, tzinfo=tz),
+        ]
+
+        # act
+        results = [compiled.apply(dtm) for dtm in dtms]
+
+        # assert
+        assert results == [
+            pendulum.datetime(2024, 12, 29, 22, 0),
+            datetime(2025, 2, 28, 22, 0),
+            datetime(2025, 2, 28, 22, 0, tzinfo=tz),
+        ]
+        assert [type(result) for result in results] == [pendulum.DateTime, datetime, datetime]
+
+    def test_compile_snaptimes(self):
+        # act
+        compiled = compile("@d-2h")
+
+        # assert
+        assert compiled.snaptimes == (
+            Snaptime(action=Action.SNAP, unit=Unit.DAY),
+            Snaptime(action=Action.SUB, unit=Unit.HOUR, time_int=2),
+        )
+
+    @pytest.mark.parametrize(
+        "snaptime,result",
+        [
+            ("@d-2h", "@d-2h"),
+            ("@days-2hours+10minutes", "@d-2h+10m"),
+            ("@15m", "@15m"),
+        ],
+    )
+    def test_compile_str(self, snaptime: str, result: str):
+        # act/assert
+        assert str(compile(snaptime)) == result
+
+    @pytest.mark.parametrize("snaptime", ["@ms", "@d-h", "", "@d 2h"])
+    def test_compile_invalid(self, snaptime: str):
+        # act/assert
+        with pytest.raises(SnaptimeError, match="Snaptime string is invalid"):
+            compile(snaptime)
+
+    def test_compile_equal_and_hashable(self):
+        # act
+        first = compile("@d-2h")
+        second = compile("@day-2hours")
+
+        # assert
+        assert first == second
+        assert hash(first) == hash(second)
+        assert first != compile("@d")
+
+    @pytest.mark.parametrize(
+        "dtm,snap_dtm,expected_type",
+        [
+            (pendulum.datetime(2024, 12, 31, 13, 1, 10), pendulum.datetime(2024, 12, 29), pendulum.DateTime),
+            (
+                pendulum.datetime(2024, 12, 31, 13, 1, 10, tz="America/New_York"),
+                pendulum.datetime(2024, 12, 29, tz="America/New_York"),
+                pendulum.DateTime,
+            ),
+            (datetime(2024, 12, 31, 13, 1, 10), datetime(2024, 12, 29), datetime),
+            (
+                datetime(2024, 12, 31, 13, 1, 10, tzinfo=ZoneInfo("America/New_York")),
+                datetime(2024, 12, 29, tzinfo=ZoneInfo("America/New_York")),
+                datetime,
+            ),
+        ],
+        ids=["pendulum", "pendulum_timezone", "datetime_naive", "datetime_aware"],
+    )
+    def test_compile_week_start(self, dtm: datetime, snap_dtm: datetime, expected_type: type[datetime]):
+        # act
+        result = compile("@w", week_start=Weekday.SUNDAY).apply(dtm)
+
+        # assert
+        assert result == snap_dtm
+        assert result == snap(dtm, "@w", week_start=Weekday.SUNDAY)
+        assert type(result) is expected_type
+        assert result.tzinfo is dtm.tzinfo
+
+    @pytest.mark.parametrize(
+        "dtm,expected_type",
+        [
+            (pendulum.datetime(2024, 12, 31, 13, 1, 10), pendulum.DateTime),
+            (datetime(2024, 12, 31, 13, 1, 10), datetime),
+            (datetime(2024, 12, 31, 13, 1, 10, tzinfo=ZoneInfo("America/New_York")), datetime),
+        ],
+        ids=["pendulum", "datetime_naive", "datetime_aware"],
+    )
+    @pytest.mark.parametrize(
+        "compile_week_start,apply_week_start,day",
+        [
+            (None, None, 30),
+            (Weekday.SUNDAY, None, 29),
+            (None, Weekday.SUNDAY, 29),
+            (Weekday.SUNDAY, Weekday.TUESDAY, 31),
+            (Weekday.SUNDAY, Weekday.MONDAY, 30),
+        ],
+        ids=["default", "compile", "apply", "apply_overrides_compile", "apply_monday_overrides_compile"],
+    )
+    def test_compile_apply_week_start(
+        self,
+        dtm: datetime,
+        expected_type: type[datetime],
+        compile_week_start: Weekday | None,
+        apply_week_start: Weekday | None,
+        day: int,
+    ):
+        # arrange
+        compiled = compile("@w") if compile_week_start is None else compile("@w", week_start=compile_week_start)
+
+        # act
+        result = compiled.apply(dtm, week_start=apply_week_start)
+
+        # assert
+        assert result == dtm.replace(day=day, hour=0, minute=0, second=0)
+        assert type(result) is expected_type
+
+    def test_compile_week_start_equality(self):
+        # act/assert
+        assert compile("@w").week_start is Weekday.MONDAY
+        assert CompiledSnaptime(()).week_start is Weekday.MONDAY
+        assert compile("@w") == compile("@w", week_start=Weekday.MONDAY)
+        assert compile("@w") != compile("@w", week_start=Weekday.SUNDAY)
+        assert str(compile("@w", week_start=Weekday.SUNDAY)) == "@w"
+
+    def test_compile_immutable(self):
+        # arrange
+        compiled = compile("@d")
+
+        # act/assert
+        with pytest.raises(FrozenInstanceError):
+            compiled.snaptimes = ()
+
+    def test_compile_repr(self):
+        # act/assert
+        assert repr(compile("@d")) == (
+            "CompiledSnaptime(snaptimes=(Snaptime(action=<Action.SNAP: '@'>, unit=<Unit.DAY: ('d', 'day', 'days')>, "
+            "time_int=None),), week_start=<Weekday.MONDAY: 0>)"
+        )
+
+    def test_compiled_snaptime_converts_list_to_tuple(self):
+        # arrange
+        snaptimes = [Snaptime(action=Action.SNAP, unit=Unit.DAY)]
+
+        # act
+        compiled = CompiledSnaptime(snaptimes)
+
+        # assert
+        assert compiled.snaptimes == (Snaptime(action=Action.SNAP, unit=Unit.DAY),)
+        assert compiled.apply(datetime(2024, 12, 30, 18, 52)) == datetime(2024, 12, 30)
+
+    def test_compiled_snaptime_no_snaptimes(self):
+        # arrange
+        dtm = pendulum.datetime(2024, 12, 30, 18, 52)
+
+        # act
+        result = CompiledSnaptime(()).apply(dtm)
+
+        # assert
+        assert result == dtm
+        assert type(result) is pendulum.DateTime
+        assert str(CompiledSnaptime(())) == ""
+
+    def test_compile_apply_invalid_datetime(self):
+        # arrange
+        dtm = date(2024, 12, 30)
+
+        # act/assert
+        with pytest.raises(
+            TypeError, match=re.escape("Invalid datetime type. Must be pendulum.DateTime or datetime.datetime.")
+        ):
+            compile("@d").apply(dtm)
+
+    def test_compile_exported_from_package(self):
+        # assert
+        assert python_snaptime.compile is compile
+        assert python_snaptime.CompiledSnaptime is CompiledSnaptime
+        assert "compile" in python_snaptime.__all__
+        assert "CompiledSnaptime" in python_snaptime.__all__
