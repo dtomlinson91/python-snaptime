@@ -1,7 +1,8 @@
+import re
+
 import pendulum
 import pytest
 from pytest_mock import MockerFixture
-
 from python_snaptime import parsers
 from python_snaptime.models import Action, Snaptime, Unit
 from python_snaptime.parsers import _parse_raw_snaptime, parse_snaptime_string
@@ -29,6 +30,17 @@ class TestParseRawSnaptime:
 
         # act/assert
         with pytest.raises(ValueError, match="^Snaptime string is invalid$"):
+            _parse_raw_snaptime(snaptime)
+
+    @pytest.mark.parametrize(
+        "snaptime,character",
+        [("@d!", "!"), ("@d -2h", " "), ("@d,-2h", ","), ("@d$$+1h", "$"), ("@d-1.5h", ".")],
+    )
+    def test_parse_raw_snaptime_unknown_character(self, snaptime: str, character: str):
+        # act/assert
+        with pytest.raises(
+            ValueError, match=re.escape(f"Snaptime string is invalid: unknown character `{character}`.")
+        ):
             _parse_raw_snaptime(snaptime)
 
 

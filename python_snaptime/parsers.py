@@ -13,6 +13,11 @@ if TYPE_CHECKING:
 
 
 def _parse_raw_snaptime(snaptime: str) -> list[Snaptime]:
+    invalid = re.search(r"[^@+\-\w]", snaptime)
+    if invalid is not None:
+        msg = f"Snaptime string is invalid: unknown character `{invalid.group()}`."
+        raise ValueError(msg)
+
     pattern = r"(([@+-]*)(\d*)(\w*))"
     matches = re.findall(pattern, snaptime)
 
@@ -31,7 +36,8 @@ def _parse_raw_snaptime(snaptime: str) -> list[Snaptime]:
             )
 
     if not results:
-        raise ValueError("Snaptime string is invalid")
+        msg = "Snaptime string is invalid"
+        raise ValueError(msg)
     return results
 
 

@@ -12,8 +12,9 @@ Inspired by Splunk's [relative time modifiers](http://docs.splunk.com/Documentat
 For example, `@d-2h` will give you two hours ago from the start of the day.
 
 - Use snaptime strings to get relative dates/times for a given datetime.
+- Use [pendulum](https://github.com/python-pendulum/pendulum) or builtin [datetime](https://docs.python.org/3/library/datetime.html#datetime-objects).
 - Timezone aware.
-- Effortlessly handles daylight savings using [pendulum](https://github.com/python-pendulum/pendulum).
+- Handles daylight savings with `fold`.
 - Can snap backwards in time to the nearest second, minute, hour, day, week, month, quarter or year.
 - Can add/subtract microseconds, milliseconds, seconds, minutes, hours, days, weeks, months, quarters or years.
 - Chain snaps together as needed e.g `@d-12h+10m@h`.
@@ -37,6 +38,11 @@ For example, `@d-2h` will give you two hours ago from the start of the day.
 | `MONTH`       | `mon`, `month`, `months`                  |         ✅         |       ✅        |
 | `QUARTER`     | `q`, `qtr`, `qtrs`, `quarter`, `quarters` |         ✅         |       ✅        |
 | `YEAR`        | `y`, `yr`, `yrs`, `year`, `years`         |         ✅         |       ✅        |
+
+A snaptime string can contain only `@`, `+`, `-`, digits and the unit strings in the table. Any other character, including a space, raises a `ValueError`.
+
+> [!NOTE]
+> `@w` snaps to the start of the week on Monday. In Splunk, `@w` snaps to Sunday.
 
 ## Examples
 
@@ -62,28 +68,6 @@ DateTime(2024, 12, 29, 12, 0, 0, tzinfo=Timezone('UTC'))
 DateTime(2024, 12, 29, 12, 0, 0, tzinfo=Timezone('Europe/London'))
 ```
 
-### DST
-
-`pendulum` makes working around DST easy
-
-```python
->>> import pendulum
->>> from python_snaptime import snap
-
->>> dtm = pendulum.datetime(2024, 10, 27, 1, 59, 59, tz="Europe/London", fold=0)
->>> snap(dtm, "+1s")
-DateTime(2024, 10, 27, 1, 0, 0, tzinfo=Timezone('Europe/London'))  # pre-transition
-```
-
-```python
->>> import pendulum
->>> from python_snaptime import snap
-
->>> dtm = pendulum.datetime(2024, 10, 27, 1, 59, 59, tz="Europe/London", fold=1)
->>> snap(dtm, "+1s")
-DateTime(2024, 10, 27, 2, 0, 0, tzinfo=Timezone('Europe/London'))  # post-transition (default)
-```
-
 ### datetime
 
 Don't care about timezones/want to use builtin `datetime.datetime`?
@@ -107,6 +91,28 @@ Can also work with builtin timezone aware datetimes
 >>> dtm = datetime(2024, 12, 30, 18, 0, 0, tzinfo=ZoneInfo("Europe/London"))
 >>> snap(dtm, "@d-12h")
 datetime.datetime(2024, 12, 29, 12, 0, tzinfo=Timezone('Europe/London'))
+```
+
+### DST
+
+Use `fold` to work with DST.
+
+```python
+>>> import pendulum
+>>> from python_snaptime import snap
+
+>>> dtm = pendulum.datetime(2024, 10, 27, 1, 59, 59, tz="Europe/London", fold=0)
+>>> snap(dtm, "+1s")
+DateTime(2024, 10, 27, 1, 0, 0, tzinfo=Timezone('Europe/London'))  # pre-transition
+```
+
+```python
+>>> import pendulum
+>>> from python_snaptime import snap
+
+>>> dtm = pendulum.datetime(2024, 10, 27, 1, 59, 59, tz="Europe/London", fold=1)
+>>> snap(dtm, "+1s")
+DateTime(2024, 10, 27, 2, 0, 0, tzinfo=Timezone('Europe/London'))  # post-transition (default)
 ```
 
 ## Installation

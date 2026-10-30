@@ -1,0 +1,107 @@
+# git-cliff configuration file: https://git-cliff.org/docs/configuration
+
+# no [remote.github] block: it makes git-cliff call the GitHub API on each run, and the template does not use that data
+
+[changelog]
+header = """
+# Changelog\n
+All notable changes to this project are documented in this file.
+
+This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).\n
+"""
+# https://keats.github.io/tera/docs/#introduction
+body = """
+{% if version -%}
+    ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}\n
+{% else -%}
+    ## [Unreleased]
+{% endif -%}
+
+{#- hand-written notes, which the workflow merges from release-notes.json -#}
+{% if version and extra -%}
+    ### Release Summary\n
+    {{ extra.summary }}
+
+    {% if extra.highlights -%}
+    ### 🎯 Highlights\n
+    {% for highlight in extra.highlights -%}
+    - {{ highlight | trim_start_matches(pat="- ") }}\n
+    {% endfor -%}
+    {% endif -%}
+
+    {% if extra.migration_notes -%}
+    ### 🚨 Migration Notes\n
+    {% for migration_note in extra.migration_notes -%}
+    - {{ migration_note | trim_start_matches(pat="- ") }}\n
+    {% endfor -%}
+    {% endif -%}
+    ---
+{% endif -%}
+
+{#- the <!-- N --> prefix of each group sets the order, striptags removes it -#}
+{% for group, commits in commits | group_by(attribute="group") %}
+    ### {{ group | striptags | trim | upper_first }}
+    {% for commit in commits %}
+        - {% if commit.breaking %}💥 **BREAKING CHANGE**: {% endif %}{{ commit.message | upper_first -}}
+          {% if commit.body %}
+          \n{% for line in commit.body | split(pat="\n") %}
+          {{- line | indent(prefix="    ", first=true) }}
+          {% endfor -%}
+          {% endif -%}
+    {% endfor %}
+{% endfor %}\n
+"""
+footer = """
+{% for release in releases -%}
+    {% if release.version -%}
+        {% if release.previous.version -%}
+[{{ release.version | trim_start_matches(pat="v") }}]: @@REPO_URL@@/compare/{{ release.previous.version }}..{{ release.version }}
+        {% else -%}
+[{{ release.version | trim_start_matches(pat="v") }}]: @@REPO_URL@@/releases/tag/{{ release.version }}
+        {% endif -%}
+    {% elif release.previous.version -%}
+[unreleased]: @@REPO_URL@@/compare/{{ release.previous.version }}..HEAD
+    {% endif -%}
+{% endfor -%}
+"""
+trim = true
+
+[git]
+conventional_commits = true
+# drop commits that are not conventional, for example `Merge branch 'x'`
+filter_unconventional = true
+split_commits = false
+
+# runs before the conventional parse
+commit_preprocessors = [
+    # git and the GitHub revert button write `Revert "feat: X"`, which is not conventional
+    { pattern = '^Revert "', replace = 'revert: Revert "' },
+    { pattern = '\n+This reverts commit [0-9a-f]+\.', replace = "" },
+]
+
+# first match wins. `skip = true` keeps a type out of the changelog
+commit_parsers = [
+    { message = "^feat", group = "<!-- 00 -->✨ Features" },
+    { message = "^fix", group = "<!-- 01 -->🐛 Bug Fixes" },
+    { message = "^perf", group = "<!-- 02 -->🏎 Performance" },
+    { message = "^revert", group = "<!-- 03 -->⏪ Reverts" },
+    { message = "^doc", group = "<!-- 04 -->📘 Documentation" },
+    { message = "^refactor", group = "<!-- 05 -->🛠 Refactor" },
+    { message = "^test", group = "<!-- 06 -->🧪 Testing" },
+    { message = "^build", group = "<!-- 07 -->🧱 Build" },
+    { message = "^style", group = "<!-- 08 -->🎨 Styling", skip = true },
+    { message = "^ci", group = "<!-- 09 -->🤖 CI", skip = true },
+    { message = "^chore", group = "<!-- 10 -->🧹 Miscellaneous", skip = true },
+]
+# a breaking commit shows even when its parser skips it
+protect_breaking_commits = true
+# drop commits that no parser matches
+filter_commits = true
+
+# stable tags only: the commits of a pre-release tag (-dev, .devN, -rc.1, a1 ...) go into the next stable release
+tag_pattern = '@@TAG_REGEX@@'
+# drops the commits of a matched tag from the changelog. Use it only for old releases that must not show
+skip_tags = ""
+ignore_tags = ""
+topo_order = false
+sort_commits = "oldest"

@@ -7,7 +7,8 @@ from python_snaptime.models import Action, Snaptime, Unit
 
 def _handle_snap_cases(snap: Snaptime, dtm: pendulum.DateTime) -> pendulum.DateTime:
     if snap.time_int is not None:
-        raise ValueError("Time integer is not allowed for SNAP action.")
+        msg = "Time integer is not allowed for SNAP action."
+        raise ValueError(msg)
     if snap.unit == Unit.SECOND:
         dtm = dtm.start_of("second")
     elif snap.unit == Unit.MINUTE:
@@ -30,7 +31,8 @@ def _handle_snap_cases(snap: Snaptime, dtm: pendulum.DateTime) -> pendulum.DateT
 
 def _handle_addition_cases(snap: Snaptime, dtm: pendulum.DateTime) -> pendulum.DateTime:
     if snap.time_int is None:
-        raise ValueError("Time integer is required for ADD action.")
+        msg = "Time integer is required for ADD action."
+        raise ValueError(msg)
     if snap.unit == Unit.MICROSECOND:
         dtm = dtm.add(microseconds=snap.time_int)
     elif snap.unit == Unit.MILLISECOND:
@@ -56,7 +58,8 @@ def _handle_addition_cases(snap: Snaptime, dtm: pendulum.DateTime) -> pendulum.D
 
 def _handle_subtraction_cases(snap: Snaptime, dtm: pendulum.DateTime) -> pendulum.DateTime:
     if snap.time_int is None:
-        raise ValueError("Time integer is required for SUB action.")
+        msg = "Time integer is required for SUB action."
+        raise ValueError(msg)
     if snap.unit == Unit.MICROSECOND:
         dtm = dtm.subtract(microseconds=snap.time_int)
     elif snap.unit == Unit.MILLISECOND:
