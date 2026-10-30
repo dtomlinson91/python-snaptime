@@ -38,6 +38,18 @@ class Unit(Enum):
         return None  # pragma: no cover
 
 
+class Weekday(int, Enum):
+    """Days of the week, numbered like `datetime.weekday()`."""
+
+    MONDAY = 0
+    TUESDAY = 1
+    WEDNESDAY = 2
+    THURSDAY = 3
+    FRIDAY = 4
+    SATURDAY = 5
+    SUNDAY = 6
+
+
 class SnaptimeDict(TypedDict, total=False):
     """Dictionary representing a snaptime configuration."""
 
