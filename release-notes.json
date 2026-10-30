@@ -1,5 +1,23 @@
 [
   {
+    "version": "v1.1.0",
+    "release_notes": {
+      "summary": "A minor release. It adds a public API to parse, apply, compile and check snaptime strings, and it removes the pydantic dependency. pendulum is now the only runtime dependency.",
+      "highlights": [
+        "`parse` and `apply` parse a snaptime string once and apply it to many datetimes. `compile` returns a reusable object, like `re.compile`",
+        "`snap_range` returns a start and an end datetime from two snaptime strings. `snap_now` snaps the current time",
+        "`@15m` snaps to a multiple of a unit. `week_start` sets the first day of the week for `@w`",
+        "Invalid snaptime strings raise `SnaptimeError`, a subclass of `ValueError`. `is_valid` checks a string without an exception"
+      ],
+      "migration_notes": [
+        "This release has a breaking change in a minor version. The risk to users is low",
+        "`Snaptime` is now a frozen dataclass, not a pydantic model. `model_dump`, `model_validate` and attribute assignment no longer work",
+        "Invalid input raises `SnaptimeError`, not `pydantic.ValidationError`. Code that catches `ValueError` keeps working",
+        "pydantic is no longer installed with python-snaptime. If your code imports pydantic, add it to your own dependencies"
+      ]
+    }
+  },
+  {
     "version": "v1.0.0",
     "release_notes": {
       "summary": "A major release. It removes support for Python 3.9, keeps the timezone of aware datetimes, and rejects snaptime strings that contain unknown characters.",
