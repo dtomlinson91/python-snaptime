@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from enum import Enum
-from typing import TypedDict
-
-from pydantic import BaseModel, model_validator
 
 
 class Action(str, Enum):
@@ -38,50 +36,47 @@ class Unit(Enum):
         return None  # pragma: no cover
 
 
-class SnaptimeDict(TypedDict, total=False):
-    """Dictionary representing a snaptime configuration."""
+@dataclass(frozen=True, kw_only=True)
+class Snaptime:
+    """Model representing a snaptime configuration.
 
-    action: str | None
-    unit: str | None
-    time_int: int | None
+    The class converts a `str` value of `action` or `unit` to its `Action` or `Unit` member.
 
-
-class Snaptime(BaseModel):
-    """Model representing a snaptime configuration."""
+    Raises:
+        ValueError: If the configuration is not a valid snaptime operation.
+    """
 
     action: Action | None = None
     unit: Unit | None = None
     time_int: int | None = None
 
-    @model_validator(mode="before")
-    @classmethod
-    def _verify_model(cls, values: SnaptimeDict) -> SnaptimeDict:
-        action = values.get("action")
-        unit = values.get("unit")
-        time_int = values.get("time_int")
-
-        if action is None:
+    def __post_init__(self) -> None:
+        """Convert the action and the unit to enums, then validate the configuration."""
+        if self.action is None:
             msg = "Snaptime string is invalid: must provide either a snap `@` or time delta `+-`."
             raise ValueError(msg)
+        # frozen dataclasses block normal attribute assignment
+        object.__setattr__(self, "action", Action(self.action))
+        if self.unit is not None:
+            object.__setattr__(self, "unit", Unit(self.unit))
 
-        if action == Action.SNAP:
-            if time_int is not None:
+        if self.action == Action.SNAP:
+            if self.time_int is not None:
                 msg = "Snaptime string is invalid: cannot use a time integer when snapping."
                 raise ValueError(msg)
-            if unit is None:
+            if self.unit is None:
                 msg = "Snaptime string is invalid: missing time unit when snapping."
                 raise ValueError(msg)
-            if unit in Unit.MILLISECOND.value:
+            if self.unit == Unit.MILLISECOND:
                 msg = "Snaptime string is invalid: cannot snap to nearest millisecond."
                 raise ValueError(msg)
-            if unit in Unit.MICROSECOND.value:
+            if self.unit == Unit.MICROSECOND:
                 msg = "Snaptime string is invalid: cannot snap to nearest microsecond."
                 raise ValueError(msg)
-        elif action in (Action.ADD, Action.SUB):
-            if time_int is None:
+        else:
+            if self.time_int is None:
                 msg = "Snaptime string is invalid: missing time integer for time addition or subtraction."
                 raise ValueError(msg)
-            if unit is None:
+            if self.unit is None:
                 msg = "Snaptime string is invalid: missing time unit for time addition or subtraction."
                 raise ValueError(msg)
-        return values

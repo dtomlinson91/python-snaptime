@@ -493,6 +493,23 @@ class TestSnap:
         assert type(result) is datetime
         assert result == datetime(2024, 3, 31, 1, 0, 0)
 
+    @pytest.mark.parametrize(
+        "dtm,expected_type",
+        [
+            (pendulum.datetime(2024, 12, 30, 13, 1, 10), pendulum.DateTime),
+            (pendulum.datetime(2024, 12, 30, 13, 1, 10, tz="America/New_York"), pendulum.DateTime),
+            (datetime(2024, 12, 30, 13, 1, 10), datetime),
+            (datetime(2024, 12, 30, 13, 1, 10, tzinfo=ZoneInfo("America/New_York")), datetime),
+            (datetime(2024, 12, 30, 13, 1, 10, tzinfo=timezone.utc), datetime),
+        ],
+    )
+    def test_snap_returns_input_type(self, dtm: datetime, expected_type: type[datetime]):
+        # act
+        result = snap(dtm, "@d-2h+10m")
+
+        # assert
+        assert type(result) is expected_type
+
 
 class TestSnapNow:
     @pytest.fixture(autouse=True)
