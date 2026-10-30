@@ -44,6 +44,8 @@ A snaptime string can contain only `@`, `+`, `-`, digits and the unit strings in
 > [!NOTE]
 > `@w` snaps to the start of the week on Monday. In Splunk, `@w` snaps to Sunday.
 
+`@` can take a multiple of `s`, `m` or `h`. For example, `@15m` snaps to 00, 15, 30 or 45 minutes past the hour. The multiple must divide 60 for `s` and `m`, and 24 for `h`. `@1m` is the same as `@m`. Splunk does not support this syntax.
+
 ## Examples
 
 ### Timezones
@@ -134,15 +136,22 @@ pip install python-snaptime
 
 ```python
 import pendulum
-from python_snaptime import snap, snap_range
+from python_snaptime import (
+    apply, parse, snap, snap_range, to_string,
+)
 
 now = pendulum.datetime(2024, 12, 30, 18, 52)  # Monday
 
 snap(now, "@d")                             # 2024-12-30 00:00, start of today
 snap(now, "@d-2h+10m")                      # 2024-12-29 22:10
+snap(now, "@15m")                           # 2024-12-30 18:45, 15-minute bucket
 
 snap_range(now, "-1d@d", "@d")                  # (2024-12-29 00:00, 2024-12-30 00:00)
 snap_range(now, "-1d@d", "@d", inclusive=True)  # (2024-12-29 00:00, 2024-12-29 23:59:59.999999)
+
+ops = parse("@d-2h")    # parse once
+apply(now, ops)         # 2024-12-29 22:00, apply many times
+to_string(ops)          # "@d-2h"
 ```
 
 ### Advanced
@@ -152,21 +161,12 @@ You can programmatically calculate snaptimes without a snaptime string, e.g the 
 ```python
 import pendulum
 
-from python_snaptime import Action, Snaptime, Unit, handle_timesnapping
+from python_snaptime import Action, Snaptime, Unit, apply
 
-
-def main():
-    datetime = pendulum.now()
-    time_snapping_operations = [
-        Snaptime(action=Action.SNAP, unit=Unit.DAY),
-        Snaptime(action=Action.SUB, unit=Unit.HOUR, time_int=2),
-        Snaptime(action=Action.ADD, unit=Unit.MINUTE, time_int=10),
-    ]
-    for operation in time_snapping_operations:
-        datetime = handle_timesnapping(operation, datetime)
-    print(datetime)  # `@d-2h+10m`
-
-
-if __name__ == "__main__":
-    main()
+operations = [
+    Snaptime(action=Action.SNAP, unit=Unit.DAY),
+    Snaptime(action=Action.SUB, unit=Unit.HOUR, time_int=2),
+    Snaptime(action=Action.ADD, unit=Unit.MINUTE, time_int=10),
+]
+apply(pendulum.now(), operations)  # `@d-2h+10m`
 ```
