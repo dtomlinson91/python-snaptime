@@ -6,14 +6,15 @@ A Python library that changes `datetime` objects with Splunk-style relative time
 
 ## This repo
 
-- Poetry manages the environment. Run each tool with `poetry run`, for example `poetry run ruff check`.
+- uv manages the environment. Run each tool with `uv run`, for example `uv run ruff check`.
+- Run `uv sync` to install the package and the dev dependencies. `uv.lock` holds the locked versions.
 - Run the tests with `make test`. It runs pytest with coverage and writes an HTML report to `htmlcov/`.
 - `make lint` runs isort, `ruff format` and pycln on `python_snaptime/` and `tests/`.
 - Ruff reads `pyproject.toml` for the package and `tests/ruff.toml` for the tests.
-- The minimum Python version is 3.9. A module that uses `X | None` must start with `from __future__ import annotations`. Pydantic reads these annotations through `eval-type-backport`.
+- The minimum Python version is 3.10.
 - `[tool.pyright]` sets strict mode for the package and ignores `tests/`. Keep the package free of Pyright errors.
-- Do not set the version by hand. `poetry-dynamic-versioning` writes it from the git tag when the package builds.
-- A `v*` tag starts two workflows. `publish.yml` publishes the package to PyPI. `changelog-pr.yml` opens a PR that updates `CHANGELOG.md`.
+- Do not set the version by hand. `uv-dynamic-versioning` gets it from the git tag. A Hatch build hook writes it to `python_snaptime/__version__.py`.
+- A `v*` tag starts two workflows. `publish.yml` runs the tests, makes a GitHub release and publishes the package to PyPI. `changelog-pr.yml` opens a PR that updates `CHANGELOG.md`.
 - `git cliff` makes the changelog from Conventional Commits, with the settings in `cliff.toml`.
 
 <!-- cmb:begin slug=writing-style version=1 hash=96b35fbc -->
