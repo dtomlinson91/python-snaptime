@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 
 import pendulum
 import pytest
-from python_snaptime import snap
+from python_snaptime import Weekday, snap
 
 
 class TestSnap:
@@ -492,3 +492,45 @@ class TestSnap:
         # assert
         assert type(result) is datetime
         assert result == datetime(2024, 3, 31, 1, 0, 0)
+
+    @pytest.mark.parametrize(
+        "week_start,snap_dtm",
+        [
+            (Weekday.MONDAY, pendulum.datetime(2024, 12, 30)),
+            (Weekday.SUNDAY, pendulum.datetime(2024, 12, 29)),
+            (Weekday.SATURDAY, pendulum.datetime(2024, 12, 28)),
+            (Weekday.TUESDAY, pendulum.datetime(2024, 12, 31)),
+        ],
+    )
+    def test_snap_week_start_pendulum(self, week_start: Weekday, snap_dtm: pendulum.DateTime):
+        # arrange
+        dtm = pendulum.datetime(2024, 12, 31)
+
+        # act
+        result = snap(dtm, "@w", week_start=week_start)
+
+        # assert
+        assert result == snap_dtm
+
+    def test_snap_week_start_default_is_monday(self):
+        # act
+        result = snap(pendulum.datetime(2024, 12, 31), "@w")
+
+        # assert
+        assert result == pendulum.datetime(2024, 12, 30)
+
+    def test_snap_week_start_datetime(self, datetime_dtm: datetime):
+        # act
+        result = snap(datetime_dtm, "@w-1d", week_start=Weekday.SUNDAY)
+
+        # assert
+        assert type(result) is datetime
+        assert result == datetime(2024, 12, 28, 0, 0, 0)
+
+    def test_snap_week_start_datetime_timezone(self, datetime_dtm_timezone: datetime):
+        # act
+        result = snap(datetime_dtm_timezone, "@w", week_start=Weekday.WEDNESDAY)
+
+        # assert
+        assert result == datetime(2024, 12, 25, 0, 0, 0, tzinfo=ZoneInfo("America/New_York"))
+        assert result.tzinfo == ZoneInfo("America/New_York")
