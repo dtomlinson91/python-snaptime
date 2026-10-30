@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 
 import pendulum
 import pytest
-from python_snaptime import snap
+from python_snaptime import snap, snap_now
 
 
 class TestSnap:
@@ -492,3 +492,50 @@ class TestSnap:
         # assert
         assert type(result) is datetime
         assert result == datetime(2024, 3, 31, 1, 0, 0)
+
+
+class TestSnapNow:
+    @pytest.fixture(autouse=True)
+    def frozen_now(self, monkeypatch: pytest.MonkeyPatch):
+        frozen = pendulum.datetime(2024, 12, 30, 18, 52, 30, 123456, tz="UTC")
+        monkeypatch.setattr(pendulum, "now", lambda tz=None: frozen.in_timezone(tz))
+
+    def test_snap_now_default_timezone_is_utc(self):
+        # act
+        result = snap_now("@d")
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result == pendulum.datetime(2024, 12, 30, tz="UTC")
+        assert result.utcoffset() == timedelta(0)
+
+    def test_snap_now_timezone_string(self):
+        # act
+        result = snap_now("@h", tz="Europe/London")
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result == pendulum.datetime(2024, 12, 30, 18, tz="Europe/London")
+        assert result.timezone_name == "Europe/London"
+
+    @pytest.mark.parametrize(
+        "tz,snaptime,snap_dtm",
+        [
+            ("Asia/Tokyo", "@d", datetime(2024, 12, 31, tzinfo=ZoneInfo("Asia/Tokyo"))),
+            (ZoneInfo("America/New_York"), "@d-2h", datetime(2024, 12, 29, 22, tzinfo=ZoneInfo("America/New_York"))),
+            (
+                pendulum.timezone("Europe/Paris"),
+                "@m+5m",
+                datetime(2024, 12, 30, 19, 57, tzinfo=ZoneInfo("Europe/Paris")),
+            ),
+            (timezone(timedelta(hours=-10)), "@d", datetime(2024, 12, 30, tzinfo=timezone(timedelta(hours=-10)))),
+        ],
+    )
+    def test_snap_now_timezone(self, tz: str | tzinfo, snaptime: str, snap_dtm: datetime):
+        # act
+        result = snap_now(snaptime, tz=tz)
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result == snap_dtm
+        assert result.utcoffset() == snap_dtm.utcoffset()
