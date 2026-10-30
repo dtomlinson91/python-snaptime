@@ -6,15 +6,19 @@ A Python library that changes `datetime` objects with Splunk-style relative time
 
 ## This repo
 
-- Poetry manages the environment. Run each tool with `poetry run`, for example `poetry run ruff check`.
+- uv manages the environment. Run each tool with `uv run`, for example `uv run ruff check`.
+- Run `uv sync` to install the package and the dev dependencies. `uv.lock` holds the locked versions.
 - Run the tests with `make test`. It runs pytest with coverage and writes an HTML report to `htmlcov/`.
 - `make lint` runs isort, `ruff format` and pycln on `python_snaptime/` and `tests/`.
 - Ruff reads `pyproject.toml` for the package and `tests/ruff.toml` for the tests.
-- The minimum Python version is 3.9. A module that uses `X | None` must start with `from __future__ import annotations`. Pydantic reads these annotations through `eval-type-backport`.
+- The minimum Python version is 3.10.
+- `tests.yml` runs the tests on Python 3.10 to 3.14 for each push to `main` and each PR. Add a new Python version to its matrix when the project supports it.
 - `[tool.pyright]` sets strict mode for the package and ignores `tests/`. Keep the package free of Pyright errors.
-- Do not set the version by hand. `poetry-dynamic-versioning` writes it from the git tag when the package builds.
-- A `v*` tag starts two workflows. `publish.yml` publishes the package to PyPI. `changelog-pr.yml` opens a PR that updates `CHANGELOG.md`.
-- `git cliff` makes the changelog from Conventional Commits, with the settings in `cliff.toml`.
+- Do not set the version by hand. `uv-dynamic-versioning` gets it from the git tag. A Hatch build hook writes it to `python_snaptime/__version__.py`.
+- A `v*` tag starts two workflows. `publish.yml` runs `tests.yml`, makes a GitHub release and publishes the package to PyPI. `changelog.yaml` opens or updates one PR from the `changelog-release` branch that updates `CHANGELOG.md`.
+- `changelog.yaml` ignores pre-release tags. Only a tag that matches `^v[0-9]+\.[0-9]+\.[0-9]+$` updates the changelog.
+- `git cliff` makes the changelog from Conventional Commits, with the settings in `cliff.toml`. The workflow reads `cliff.toml` and `release-notes.json` from `main`.
+- Put hand-written release summaries in `release-notes.json`. The `version` key is the full tag name, for example `v1.2.0`.
 
 <!-- cmb:begin slug=writing-style version=1 hash=96b35fbc -->
 ## Writing style

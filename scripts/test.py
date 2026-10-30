@@ -1,8 +1,9 @@
 import pendulum
+
 from python_snaptime import snap
 
 
-def main():
+def main() -> None:
     snaptimes = [
         "@d",
         "@h-2h",
@@ -58,10 +59,7 @@ def main():
 
     dtm = pendulum.datetime(2024, 12, 30, 13, 1, 10, 999999, tz=pendulum.timezone("America/New_York"))
     for snaptime in snaptimes:
-        result = snap(dtm, snaptime)
-        print(
-            f"{result.year},{result.month},{result.day},{result.hour},{result.minute},{result.second},{result.microsecond}"
-        )
+        snap(dtm, snaptime)
 
 
 if __name__ == "__main__":

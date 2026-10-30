@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "skills": {
+    "changelog-merge-message": {
+      "source": "ssh://git@plex-hetzner-1.tail9e2bf.ts.net:2222/dtomlinson/llm-skills.git",
+      "sourceUrl": "ssh://git@plex-hetzner-1.tail9e2bf.ts.net:2222/dtomlinson/llm-skills.git",
+      "sourceType": "git",
+      "skillPath": "skills/changelog-merge-message/SKILL.md",
+      "computedHash": "1037c12a47fa06758be4782a73257b6eb4c56120b1d71793748ee49df32edffa"
+    },
+    "initialise-changelog": {
+      "source": "ssh://git@plex-hetzner-1.tail9e2bf.ts.net:2222/dtomlinson/llm-skills.git",
+      "sourceUrl": "ssh://git@plex-hetzner-1.tail9e2bf.ts.net:2222/dtomlinson/llm-skills.git",
+      "sourceType": "git",
+      "skillPath": "skills/initialise-changelog/SKILL.md",
+      "computedHash": "2f4c27ed046fdc663f1754e53f27a277240aedb9c93529998263ee02533919a8"
+    }
+  }
+}

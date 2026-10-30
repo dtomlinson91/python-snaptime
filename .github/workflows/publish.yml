@@ -10,61 +10,57 @@ permissions:
   id-token: write
 
 jobs:
+  tests:
+    uses: ./.github/workflows/tests.yml
+
   publish-package:
+    needs: tests
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v7.0.1
+        with:
+          # uv-dynamic-versioning and git-cliff read the version from the git tags
+          fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5.3.0
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           python-version: "3.11"
-
-      - name: Install Poetry
-        uses: snok/install-poetry@v1.4.1
-        with:
-          version: 1.5.1
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          plugins: poetry-dynamic-versioning[plugin]
-
-      - name: Load cached venv
-        id: cached-poetry-dependencies
-        uses: actions/cache@v4.2.0
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
-
-      - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction
-
-      - name: Install root package only
-        if: steps.cached-poetry-dependencies.outputs.cache-hit == 'true'
-        run: poetry install --no-interaction --only-root
+          enable-cache: true
 
       - name: Build package
-        run: |
-          poetry build
+        run: uv build
 
-      - name: Generate changelog for latest tag
-        uses: orhun/git-cliff-action@v4.4.2
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2
         with:
-          config: cliff.toml
-          args: --latest
+          tool: git-cliff@2.14.2
+
+      # the release notes come from the default branch, the same as in changelog.yaml
+      - name: Generate release notes for latest tag
         env:
-          OUTPUT: CHANGELOG.md
-          GITHUB_REPO: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          git fetch origin "$DEFAULT_BRANCH"
+
+          if git show "origin/$DEFAULT_BRANCH:release-notes.json" > "$RUNNER_TEMP/release-notes.json" 2>/dev/null; then
+            git cliff --config cliff.toml --latest --context \
+              | jq --slurpfile notes "$RUNNER_TEMP/release-notes.json" \
+                  'map(. as $release | if .version then . + {extra: ($notes[0] | map(select(.version == $release.version)) | first | .release_notes)} else . end)' \
+              | git cliff --config cliff.toml --from-context - --strip all --output "$RUNNER_TEMP/RELEASE_NOTES.md"
+          else
+            git cliff --config cliff.toml --latest --strip all --output "$RUNNER_TEMP/RELEASE_NOTES.md"
+          fi
 
       - name: Create release
-        uses: softprops/action-gh-release@v2.1.0
+        uses: softprops/action-gh-release@v3.0.3
         with:
           files: dist/*
-          body_path: CHANGELOG.md
+          body_path: ${{ runner.temp }}/RELEASE_NOTES.md
 
       - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.12.3
-        # with:
-          # repository-url: https://test.pypi.org/legacy/
+        run: uv publish --trusted-publishing always

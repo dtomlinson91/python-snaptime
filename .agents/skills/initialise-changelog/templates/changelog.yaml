@@ -1,0 +1,121 @@
+name: Changelog
+
+on:
+  push:
+    tags:
+      - "@@TAG_GLOB@@"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build the changelog for, for example @@EXAMPLE_TAG@@"
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# one run at a time, so two tags pushed together cannot race on the PR branch
+concurrency:
+  group: changelog
+  cancel-in-progress: false
+
+env:
+  GIT_CLIFF_VERSION: "2.14.2"
+  # rolling branch behind the single open changelog PR
+  CHANGELOG_BRANCH: changelog-release
+  CHANGELOG_PATH: CHANGELOG.md
+  # must match tag_pattern in cliff.toml
+  RELEASE_TAG_REGEX: '@@TAG_REGEX@@'
+
+jobs:
+  # GitHub tag filters are globs and cannot exclude pre-release tags such as -dev and .devN
+  check-tag:
+    name: Check the tag
+    runs-on: ubuntu-latest
+    outputs:
+      is_release: ${{ steps.tag.outputs.is_release }}
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Check that the tag is a stable release
+        id: tag
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          if [[ "$TAG" =~ $RELEASE_TAG_REGEX ]]; then
+            echo "is_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::$TAG is not a stable release tag. No changelog."
+            echo "is_release=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+  changelog:
+    name: Generate the changelog and open a PR
+    needs: check-tag
+    if: needs.check-tag.outputs.is_release == 'true'
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ needs.check-tag.outputs.tag }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - name: Checkout the tag
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.check-tag.outputs.tag }}
+          fetch-depth: 0
+
+      # optional App token, so that the PR starts the other workflows. Without the App, the PR uses GITHUB_TOKEN
+      - name: Get the GitHub App token
+        id: app-token
+        if: vars.CHANGELOG_APP_CLIENT_ID != ''
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.CHANGELOG_APP_CLIENT_ID }}
+          private-key: ${{ secrets.CHANGELOG_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff@${{ env.GIT_CLIFF_VERSION }}
+
+      # the config and the release notes come from the default branch, so later edits apply to every release without a new tag
+      - name: Generate the changelog
+        run: |
+          set -euo pipefail
+
+          git fetch origin "$DEFAULT_BRANCH"
+          git show "origin/$DEFAULT_BRANCH:cliff.toml" > "$RUNNER_TEMP/cliff.toml"
+
+          if git show "origin/$DEFAULT_BRANCH:release-notes.json" > "$RUNNER_TEMP/release-notes.json" 2>/dev/null; then
+            git cliff --config "$RUNNER_TEMP/cliff.toml" --context \
+              | jq --slurpfile notes "$RUNNER_TEMP/release-notes.json" \
+                  'map(. as $release | if .version then . + {extra: ($notes[0] | map(select(.version == $release.version)) | first | .release_notes)} else . end)' \
+              | git cliff --config "$RUNNER_TEMP/cliff.toml" --from-context - --output "$RUNNER_TEMP/CHANGELOG.md"
+          else
+            git cliff --config "$RUNNER_TEMP/cliff.toml" --output "$RUNNER_TEMP/CHANGELOG.md"
+          fi
+
+      - name: Move to the default branch
+        run: |
+          set -euo pipefail
+          git checkout -B "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
+          cp "$RUNNER_TEMP/CHANGELOG.md" "$CHANGELOG_PATH"
+
+      # creates the PR, or updates the open one. Closes it when the default branch already matches
+      - name: Create or update the changelog PR
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ steps.app-token.outputs.token || github.token }}
+          base: ${{ env.DEFAULT_BRANCH }}
+          branch: ${{ env.CHANGELOG_BRANCH }}
+          add-paths: ${{ env.CHANGELOG_PATH }}
+          commit-message: "chore: update the changelog for ${{ env.TAG }}"
+          title: "chore: update the changelog for ${{ env.TAG }}"
+          body: |
+            Automated `${{ env.CHANGELOG_PATH }}` update, currently at **${{ env.TAG }}**.
+
+            Each stable tag rebuilds this branch from `${{ env.DEFAULT_BRANCH }}`, so only one of these PRs is open at a time. git-cliff regenerates the whole changelog, so this PR holds every release since the last merge.
+          sign-commits: true
+          delete-branch: true

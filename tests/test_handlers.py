@@ -1,7 +1,6 @@
 import pendulum
 import pytest
 from pytest_mock import MockerFixture
-
 from python_snaptime import handlers
 from python_snaptime.models import Action, Snaptime, Unit
 

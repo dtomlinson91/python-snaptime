@@ -61,20 +61,27 @@ class Snaptime(BaseModel):
         time_int = values.get("time_int")
 
         if action is None:
-            raise ValueError("Snaptime string is invalid: must provide either a snap `@` or time delta `+-`.")
+            msg = "Snaptime string is invalid: must provide either a snap `@` or time delta `+-`."
+            raise ValueError(msg)
 
         if action == Action.SNAP:
             if time_int is not None:
-                raise ValueError("Snaptime string is invalid: cannot use a time integer when snapping.")
+                msg = "Snaptime string is invalid: cannot use a time integer when snapping."
+                raise ValueError(msg)
             if unit is None:
-                raise ValueError("Snaptime string is invalid: missing time unit when snapping.")
+                msg = "Snaptime string is invalid: missing time unit when snapping."
+                raise ValueError(msg)
             if unit in Unit.MILLISECOND.value:
-                raise ValueError("Snaptime string is invalid: cannot snap to nearest millisecond.")
+                msg = "Snaptime string is invalid: cannot snap to nearest millisecond."
+                raise ValueError(msg)
             if unit in Unit.MICROSECOND.value:
-                raise ValueError("Snaptime string is invalid: cannot snap to nearest microsecond.")
+                msg = "Snaptime string is invalid: cannot snap to nearest microsecond."
+                raise ValueError(msg)
         elif action in (Action.ADD, Action.SUB):
             if time_int is None:
-                raise ValueError("Snaptime string is invalid: missing time integer for time addition or subtraction.")
+                msg = "Snaptime string is invalid: missing time integer for time addition or subtraction."
+                raise ValueError(msg)
             if unit is None:
-                raise ValueError("Snaptime string is invalid: missing time unit for time addition or subtraction.")
+                msg = "Snaptime string is invalid: missing time unit for time addition or subtraction."
+                raise ValueError(msg)
         return values

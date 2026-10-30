@@ -1,10 +1,10 @@
 import re
-from datetime import date, datetime
+import time
+from datetime import date, datetime, timedelta, timezone, tzinfo
 from zoneinfo import ZoneInfo
 
 import pendulum
 import pytest
-
 from python_snaptime import snap
 
 
@@ -446,3 +446,49 @@ class TestSnap:
 
         # assert
         assert result == snap_dtm
+
+    @pytest.mark.parametrize(
+        "tz",
+        [ZoneInfo("America/New_York"), timezone.utc, timezone(timedelta(hours=5, minutes=30))],
+    )
+    def test_snap_datetime_keeps_tzinfo(self, tz: tzinfo):
+        # arrange
+        dtm = datetime(2024, 12, 30, 13, 1, 10, 999999, tzinfo=tz)
+
+        # act
+        result = snap(dtm, "@d-2h")
+
+        # assert
+        assert result.tzinfo is tz
+        assert result == datetime(2024, 12, 29, 22, 0, 0, 0, tzinfo=tz)
+
+    def test_snap_datetime_zoneinfo_across_dst(self):
+        # arrange
+        dtm = datetime(2024, 11, 3, 12, 0, 0, tzinfo=ZoneInfo("America/New_York"))
+
+        # act
+        result = snap(dtm, "@d")
+
+        # assert
+        assert result == datetime(2024, 11, 3, 0, 0, 0, tzinfo=ZoneInfo("America/New_York"))
+        assert result.utcoffset() == timedelta(hours=-4)
+
+    @pytest.fixture()
+    def local_tz_with_dst(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setenv("TZ", "Europe/London")
+        time.tzset()
+        yield
+        monkeypatch.undo()
+        time.tzset()
+
+    @pytest.mark.usefixtures("local_tz_with_dst")
+    def test_snap_datetime_naive_ignores_local_dst(self):
+        # arrange
+        dtm = datetime(2024, 3, 31, 1, 30, 0, 123457)
+
+        # act
+        result = snap(dtm, "@h")
+
+        # assert
+        assert type(result) is datetime
+        assert result == datetime(2024, 3, 31, 1, 0, 0)
