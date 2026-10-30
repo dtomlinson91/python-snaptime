@@ -1,7 +1,7 @@
 import re
 
 import pytest
-from python_snaptime.models import Snaptime, Unit
+from python_snaptime.models import Action, Snaptime, Unit
 
 
 @pytest.mark.parametrize(
@@ -124,3 +124,63 @@ class TestSnaptime:
             match=re.escape("Snaptime string is invalid: missing time unit for time addition or subtraction."),
         ):
             Snaptime(**snaptime)
+
+    @pytest.mark.parametrize(
+        "snaptime",
+        [{"action": "+", "unit": "h", "time_int": -2}, {"action": "-", "unit": "h", "time_int": -2}],
+    )
+    def test_snaptime_verify_delta_negative_time_int(self, snaptime):
+        # act/assert
+        with pytest.raises(ValueError, match=re.escape("Snaptime string is invalid: time integer cannot be negative.")):
+            Snaptime(**snaptime)
+
+    @pytest.mark.parametrize("time_int,result", [(0, 0), ("2", 2)])
+    def test_snaptime_verify_delta_time_int(self, time_int, result):
+        # act
+        snaptime = Snaptime(action="+", unit="h", time_int=time_int)
+
+        # assert
+        assert snaptime.time_int == result
+
+
+@pytest.mark.parametrize(
+    "unit,result",
+    [
+        (Unit.MICROSECOND, "+3us"),
+        (Unit.MILLISECOND, "+3ms"),
+        (Unit.SECOND, "+3s"),
+        (Unit.MINUTE, "+3m"),
+        (Unit.HOUR, "+3h"),
+        (Unit.DAY, "+3d"),
+        (Unit.WEEK, "+3w"),
+        (Unit.MONTH, "+3mon"),
+        (Unit.QUARTER, "+3q"),
+        (Unit.YEAR, "+3y"),
+    ],
+)
+def test_snaptime_str_unit(unit, result):
+    # arrange
+    snaptime = Snaptime(action=Action.ADD, unit=unit, time_int=3)
+
+    # act
+    snaptime_str = str(snaptime)
+
+    # assert
+    assert snaptime_str == result
+
+
+@pytest.mark.parametrize(
+    "snaptime,result",
+    [
+        (Snaptime(action=Action.SNAP, unit=Unit.DAY), "@d"),
+        (Snaptime(action=Action.ADD, unit=Unit.HOUR, time_int=2), "+2h"),
+        (Snaptime(action=Action.SUB, unit=Unit.HOUR, time_int=2), "-2h"),
+        (Snaptime(action="-", unit="hours", time_int=6), "-6h"),
+    ],
+)
+def test_snaptime_str_action(snaptime, result):
+    # act
+    snaptime_str = str(snaptime)
+
+    # assert
+    assert snaptime_str == result
