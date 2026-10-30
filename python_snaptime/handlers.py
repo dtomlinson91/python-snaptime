@@ -2,10 +2,12 @@
 
 import pendulum
 
-from python_snaptime.models import Action, Snaptime, Unit
+from python_snaptime.models import Action, Snaptime, Unit, Weekday
 
 
-def _handle_snap_cases(snap: Snaptime, dtm: pendulum.DateTime) -> pendulum.DateTime:
+def _handle_snap_cases(
+    snap: Snaptime, dtm: pendulum.DateTime, week_start: Weekday = Weekday.MONDAY
+) -> pendulum.DateTime:
     if snap.time_int is not None and snap.unit not in (Unit.SECOND, Unit.MINUTE, Unit.HOUR):
         msg = "Time integer is allowed for SNAP action only with seconds, minutes or hours."
         raise ValueError(msg)
@@ -23,7 +25,7 @@ def _handle_snap_cases(snap: Snaptime, dtm: pendulum.DateTime) -> pendulum.DateT
     elif snap.unit == Unit.DAY:
         dtm = dtm.start_of("day")
     elif snap.unit == Unit.WEEK:
-        dtm = dtm.start_of("week")
+        dtm = dtm.subtract(days=(dtm.weekday() - week_start) % 7).start_of("day")
     elif snap.unit == Unit.MONTH:
         dtm = dtm.start_of("month")
     elif snap.unit == Unit.QUARTER:
@@ -96,18 +98,21 @@ def _handle_delta_cases(snap: Snaptime, dtm: pendulum.DateTime) -> pendulum.Date
     return dtm
 
 
-def handle_timesnapping(snap: Snaptime, dtm: pendulum.DateTime) -> pendulum.DateTime:
+def handle_timesnapping(
+    snap: Snaptime, dtm: pendulum.DateTime, *, week_start: Weekday = Weekday.MONDAY
+) -> pendulum.DateTime:
     """Handle different time snapping cases using the snaptime action.
 
     Args:
         snap (Snaptime): An instance of `Snaptime` containing the time snapping to be performed.
         dtm (pendulum.DateTime): The datetime object to apply to the time snapping.
+        week_start (Weekday): The first day of the week for `@w`. The default is Monday.
 
     Returns:
         pendulum.DateTime: The resulting datetime object after applying the time snapping.
     """
     if snap.action == Action.SNAP:
-        dtm = _handle_snap_cases(snap, dtm)
+        dtm = _handle_snap_cases(snap, dtm, week_start)
     if snap.action in (Action.ADD, Action.SUB):
         dtm = _handle_delta_cases(snap, dtm)
     return dtm

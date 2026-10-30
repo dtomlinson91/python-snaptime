@@ -42,7 +42,7 @@ For example, `@d-2h` will give you two hours ago from the start of the day.
 A snaptime string can contain only `@`, `+`, `-`, digits and the unit strings in the table. Any other character, including a space, raises a `ValueError`.
 
 > [!NOTE]
-> `@w` snaps to the start of the week on Monday. In Splunk, `@w` snaps to Sunday.
+> By default, `@w` snaps to the start of the week on Monday. In Splunk, `@w` snaps to Sunday. To use a different first day of the week, set `week_start`, for example `snap(dtm, "@w", week_start=Weekday.SUNDAY)`.
 
 `@` can take a multiple of `s`, `m` or `h`. For example, `@15m` snaps to 00, 15, 30 or 45 minutes past the hour. The multiple must divide 60 for `s` and `m`, and 24 for `h`. `@1m` is the same as `@m`. Splunk does not support this syntax.
 
@@ -137,7 +137,7 @@ pip install python-snaptime
 ```python
 import pendulum
 from python_snaptime import (
-    apply, parse, snap, snap_now, snap_range, to_string,
+    Weekday, apply, parse, snap, snap_now, snap_range, to_string,
 )
 
 now = pendulum.datetime(2024, 12, 30, 18, 52)  # Monday
@@ -145,6 +145,7 @@ now = pendulum.datetime(2024, 12, 30, 18, 52)  # Monday
 snap(now, "@d")                             # 2024-12-30 00:00, start of today
 snap(now, "@d-2h+10m")                      # 2024-12-29 22:10
 snap(now, "@15m")                           # 2024-12-30 18:45, 15-minute bucket
+snap(now, "@w", week_start=Weekday.SUNDAY)  # 2024-12-29 00:00
 snap_now("@h", tz="Europe/London")          # start of the current hour in London
 
 snap_range(now, "-1d@d", "@d")                  # (2024-12-29 00:00, 2024-12-30 00:00)
