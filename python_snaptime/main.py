@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
     from python_snaptime.models import Snaptime
 
-__all__ = ["apply", "snap"]
+__all__ = ["apply", "snap", "snap_range"]
 
 
 def _transform_datetime(
@@ -85,3 +85,47 @@ def snap(dtm: pendulum.DateTime | dt.datetime, snap: str) -> pendulum.DateTime |
         pendulum.DateTime | dt.datetime: The resulting snapped datetime.
     """
     return apply(dtm, parse(snap))
+
+
+@overload
+def snap_range(
+    dtm: pendulum.DateTime, start: str, end: str, *, inclusive: bool = False
+) -> tuple[pendulum.DateTime, pendulum.DateTime]: ...
+
+
+@overload
+def snap_range(
+    dtm: dt.datetime, start: str, end: str, *, inclusive: bool = False
+) -> tuple[dt.datetime, dt.datetime]: ...
+
+
+def snap_range(
+    dtm: pendulum.DateTime | dt.datetime, start: str, end: str, *, inclusive: bool = False
+) -> tuple[pendulum.DateTime, pendulum.DateTime] | tuple[dt.datetime, dt.datetime]:
+    """Get the start and the end of a range from two snaptime strings.
+
+    Args:
+        dtm (pendulum.DateTime | dt.datetime): The datetime to be transformed.
+        start (str): The snaptime string for the start of the range.
+        end (str): The snaptime string for the end of the range.
+        inclusive (bool): If True, the end is the last microsecond in the range. If False, the end is
+            the first microsecond after the range.
+
+    Returns:
+        tuple[pendulum.DateTime, pendulum.DateTime] | tuple[dt.datetime, dt.datetime]: The start and
+            the end of the range.
+
+    Raises:
+        ValueError: If the start is after the end, or if `inclusive` is True and the range is empty.
+    """
+    start_dtm = snap(dtm, start)
+    end_dtm = snap(dtm, end)
+    if start_dtm > end_dtm:
+        msg = f"The start of the range ({start!r}) is after the end ({end!r})."
+        raise ValueError(msg)
+    if inclusive:
+        if start_dtm == end_dtm:
+            msg = f"The range from {start!r} to {end!r} is empty. An inclusive range must not be empty."
+            raise ValueError(msg)
+        end_dtm -= dt.timedelta(microseconds=1)
+    return start_dtm, end_dtm

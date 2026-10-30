@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 import pendulum
 import pytest
 import python_snaptime
-from python_snaptime import Action, Snaptime, Unit, apply, parse, snap
+from python_snaptime import Action, Snaptime, Unit, apply, parse, snap, snap_range
 
 
 class TestSnap:
@@ -729,3 +729,95 @@ class TestApply:
         # assert
         assert python_snaptime.apply is apply
         assert "apply" in python_snaptime.__all__
+
+
+class TestSnapRange:
+    @pytest.mark.parametrize(
+        "dtm",
+        [
+            pendulum.datetime(2024, 12, 30, 18),
+            pendulum.datetime(2024, 12, 30, 18, tz=pendulum.timezone("America/New_York")),
+            datetime(2024, 12, 30, 18),
+            datetime(2024, 12, 30, 18, tzinfo=ZoneInfo("America/New_York")),
+            datetime(2024, 12, 30, 18, tzinfo=timezone(timedelta(hours=5, minutes=30))),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "start,end,inclusive,start_delta,end_delta",
+        [
+            ("-1d@d", "@d", False, timedelta(days=-1), timedelta(0)),
+            ("-1d@d", "@d", True, timedelta(days=-1), timedelta(microseconds=-1)),
+            ("@d", "@d", False, timedelta(0), timedelta(0)),
+            ("@d", "@d+1us", True, timedelta(0), timedelta(0)),
+        ],
+    )
+    def test_snap_range(
+        self,
+        dtm: datetime,
+        start: str,
+        end: str,
+        inclusive: bool,
+        start_delta: timedelta,
+        end_delta: timedelta,
+    ):
+        # arrange
+        midnight = dtm.replace(hour=0)
+
+        # act
+        result = snap_range(dtm, start, end, inclusive=inclusive)
+
+        # assert
+        assert result == (midnight + start_delta, midnight + end_delta)
+        assert type(result) is tuple
+        assert len(result) == 2
+        for result_dtm in result:
+            assert type(result_dtm) is type(dtm)
+            assert result_dtm.tzinfo is dtm.tzinfo
+
+    def test_snap_range_pendulum(self):
+        # arrange
+        dtm = pendulum.datetime(2024, 12, 30, 18)
+
+        # act
+        result = snap_range(dtm, "-1d@d", "@d", inclusive=True)
+
+        # assert
+        assert result == (pendulum.datetime(2024, 12, 29), pendulum.datetime(2024, 12, 29, 23, 59, 59, 999999))
+        assert all(type(result_dtm) is pendulum.DateTime for result_dtm in result)
+        assert all(result_dtm.tzinfo == pendulum.UTC for result_dtm in result)
+
+    @pytest.mark.parametrize(
+        "tz",
+        [None, ZoneInfo("America/New_York"), timezone.utc, timezone(timedelta(hours=5, minutes=30))],
+    )
+    def test_snap_range_datetime(self, tz: tzinfo | None):
+        # arrange
+        dtm = datetime(2024, 12, 30, 18, tzinfo=tz)
+
+        # act
+        result = snap_range(dtm, "-1d@d", "@d", inclusive=True)
+
+        # assert
+        assert result == (datetime(2024, 12, 29, tzinfo=tz), datetime(2024, 12, 29, 23, 59, 59, 999999, tzinfo=tz))
+        assert all(type(result_dtm) is datetime for result_dtm in result)
+        assert all(result_dtm.tzinfo is tz for result_dtm in result)
+
+    @pytest.mark.parametrize("dtm", [pendulum.datetime(2024, 12, 30, 18), datetime(2024, 12, 30, 18)])
+    def test_snap_range_empty_inclusive(self, dtm: datetime):
+        # act/assert
+        with pytest.raises(
+            ValueError, match=re.escape("The range from '@d' to '@d' is empty. An inclusive range must not be empty.")
+        ):
+            snap_range(dtm, "@d", "@d", inclusive=True)
+
+    @pytest.mark.parametrize("dtm", [pendulum.datetime(2024, 12, 30, 18), datetime(2024, 12, 30, 18)])
+    @pytest.mark.parametrize("inclusive", [False, True])
+    def test_snap_range_reversed(self, dtm: datetime, inclusive: bool):
+        # act/assert
+        with pytest.raises(ValueError, match=re.escape("The start of the range ('@d') is after the end ('-1d@d').")):
+            snap_range(dtm, "@d", "-1d@d", inclusive=inclusive)
+
+    def test_snap_range_invalid_datetime(self):
+        # act/assert
+        with pytest.raises(TypeError, match=re.escape("Invalid datetime type.")):
+            snap_range(date(2024, 12, 30), "-1d@d", "@d")
