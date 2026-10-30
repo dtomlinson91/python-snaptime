@@ -14,8 +14,10 @@ A Python library that changes `datetime` objects with Splunk-style relative time
 - The minimum Python version is 3.10.
 - `[tool.pyright]` sets strict mode for the package and ignores `tests/`. Keep the package free of Pyright errors.
 - Do not set the version by hand. `uv-dynamic-versioning` gets it from the git tag. A Hatch build hook writes it to `python_snaptime/__version__.py`.
-- A `v*` tag starts two workflows. `publish.yml` runs the tests, makes a GitHub release and publishes the package to PyPI. `changelog-pr.yml` opens a PR that updates `CHANGELOG.md`.
-- `git cliff` makes the changelog from Conventional Commits, with the settings in `cliff.toml`.
+- A `v*` tag starts two workflows. `publish.yml` runs the tests, makes a GitHub release and publishes the package to PyPI. `changelog.yaml` opens or updates one PR from the `changelog-release` branch that updates `CHANGELOG.md`.
+- `changelog.yaml` ignores pre-release tags. Only a tag that matches `^v[0-9]+\.[0-9]+\.[0-9]+$` updates the changelog.
+- `git cliff` makes the changelog from Conventional Commits, with the settings in `cliff.toml`. The workflow reads `cliff.toml` and `release-notes.json` from `main`.
+- Put hand-written release summaries in `release-notes.json`. The `version` key is the full tag name, for example `v1.2.0`.
 
 <!-- cmb:begin slug=writing-style version=1 hash=96b35fbc -->
 ## Writing style
