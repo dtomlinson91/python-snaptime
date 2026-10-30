@@ -6,7 +6,7 @@ import re
 from typing import TYPE_CHECKING
 
 from python_snaptime.handlers import handle_timesnapping
-from python_snaptime.models import Snaptime
+from python_snaptime.models import Snaptime, Weekday
 
 if TYPE_CHECKING:
     import pendulum
@@ -41,17 +41,20 @@ def _parse_raw_snaptime(snaptime: str) -> list[Snaptime]:
     return results
 
 
-def parse_snaptime_string(snaptime: str, datetime: pendulum.DateTime) -> pendulum.DateTime:
+def parse_snaptime_string(
+    snaptime: str, datetime: pendulum.DateTime, *, week_start: Weekday = Weekday.MONDAY
+) -> pendulum.DateTime:
     """Parse a datetime using a snaptime string.
 
     Args:
         snaptime (str): The snaptime string defining the relative time transformation.
         datetime (pendulum.DateTime): The datetime to be transformed.
+        week_start (Weekday): The first day of the week for `@w`. The default is Monday.
 
     Returns:
         pendulum.DateTime: The resulting snapped datetime.
     """
     parsed_snaptimes = _parse_raw_snaptime(snaptime)
     for _snaptime in parsed_snaptimes:
-        datetime = handle_timesnapping(_snaptime, datetime)
+        datetime = handle_timesnapping(_snaptime, datetime, week_start=week_start)
     return datetime
