@@ -512,8 +512,12 @@ class TestSnapMultiple:
         ],
     )
     def test_snap_multiple(self, dtm: pendulum.DateTime, snaptime: str, snap_dtm: pendulum.DateTime):
-        # act/assert
-        assert snap(dtm, snaptime) == snap_dtm
+        # act
+        result = snap(dtm, snaptime)
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result == snap_dtm
 
     def test_snap_multiple_one_is_snap(self, dtm: pendulum.DateTime):
         # act/assert
@@ -527,16 +531,34 @@ class TestSnapMultiple:
         with pytest.raises(ValueError, match="Snaptime string is invalid"):
             snap(dtm, snaptime)
 
-    def test_snap_multiple_datetime(self):
+    @pytest.mark.parametrize("tz", [None, ZoneInfo("America/New_York"), timezone.utc])
+    def test_snap_multiple_datetime(self, tz: tzinfo | None):
         # arrange
-        dtm = datetime(2024, 12, 30, 18, 52)
+        dtm = datetime(2024, 12, 30, 18, 52, 37, 123456, tzinfo=tz)
 
         # act
         result = snap(dtm, "@15m")
 
         # assert
         assert type(result) is datetime
-        assert result == datetime(2024, 12, 30, 18, 45)
+        assert result.tzinfo is tz
+        assert result == datetime(2024, 12, 30, 18, 45, tzinfo=tz)
+
+    @pytest.mark.parametrize(
+        "fold,utcoffset",
+        [(0, timedelta(hours=1)), (1, timedelta(0))],
+    )
+    def test_snap_multiple_pendulum_across_dst(self, fold: int, utcoffset: timedelta):
+        # arrange
+        dtm = pendulum.datetime(2024, 10, 27, 1, 52, tz="Europe/London", fold=fold)
+
+        # act
+        result = snap(dtm, "@15m")
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result.naive() == pendulum.naive(2024, 10, 27, 1, 45)
+        assert result.utcoffset() == utcoffset
 
     @pytest.mark.parametrize(
         "fold,utcoffset",
@@ -544,11 +566,14 @@ class TestSnapMultiple:
     )
     def test_snap_multiple_datetime_across_dst(self, fold: int, utcoffset: timedelta):
         # arrange
-        dtm = datetime(2024, 10, 27, 1, 52, tzinfo=ZoneInfo("Europe/London"), fold=fold)
+        tz = ZoneInfo("Europe/London")
+        dtm = datetime(2024, 10, 27, 1, 52, tzinfo=tz, fold=fold)
 
         # act
         result = snap(dtm, "@15m")
 
         # assert
+        assert type(result) is datetime
+        assert result.tzinfo is tz
         assert result.replace(tzinfo=None) == datetime(2024, 10, 27, 1, 45)
         assert result.utcoffset() == utcoffset
