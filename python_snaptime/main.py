@@ -3,19 +3,20 @@
 from __future__ import annotations
 
 import datetime as dt
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, overload
 
 import pendulum
 
 from python_snaptime.handlers import handle_timesnapping
-from python_snaptime.parsers import parse
+from python_snaptime.parsers import parse, to_string
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
     from python_snaptime.models import Snaptime
 
-__all__ = ["apply", "snap"]
+__all__ = ["CompiledSnaptime", "apply", "compile", "snap"]
 
 
 def _transform_datetime(
@@ -85,3 +86,61 @@ def snap(dtm: pendulum.DateTime | dt.datetime, snap: str) -> pendulum.DateTime |
         pendulum.DateTime | dt.datetime: The resulting snapped datetime.
     """
     return apply(dtm, parse(snap))
+
+
+@dataclass(frozen=True)
+class CompiledSnaptime:
+    """A parsed snaptime string that you can apply to many datetimes.
+
+    The class converts a `snaptimes` value of another sequence type to a `tuple`.
+    """
+
+    snaptimes: tuple[Snaptime, ...]
+
+    def __post_init__(self) -> None:
+        """Convert the snaptimes to a tuple."""
+        # frozen dataclasses block normal attribute assignment
+        object.__setattr__(self, "snaptimes", tuple(self.snaptimes))
+
+    def __str__(self) -> str:
+        """Return the snaptime string of the snaptimes, for example `@d-2h`.
+
+        Returns:
+            str: The snaptime string.
+        """
+        return to_string(self.snaptimes)
+
+    @overload
+    def apply(self, dtm: pendulum.DateTime) -> pendulum.DateTime: ...
+
+    @overload
+    def apply(self, dtm: dt.datetime) -> dt.datetime: ...
+
+    def apply(self, dtm: pendulum.DateTime | dt.datetime) -> pendulum.DateTime | dt.datetime:
+        """Transform a datetime with the snaptimes.
+
+        Args:
+            dtm (pendulum.DateTime | dt.datetime): The datetime to be transformed.
+
+        Returns:
+            pendulum.DateTime | dt.datetime: The resulting snapped datetime.
+
+        Raises:
+            TypeError: If `dtm` is not a `pendulum.DateTime` or a `datetime.datetime`.
+        """
+        return apply(dtm, self.snaptimes)
+
+
+def compile(snaptime: str) -> CompiledSnaptime:  # noqa: A001
+    """Parse a snaptime string into an object that you can apply to many datetimes.
+
+    Args:
+        snaptime (str): The snaptime string to parse, for example `@d-2h`.
+
+    Returns:
+        CompiledSnaptime: The parsed snaptime string.
+
+    Raises:
+        ValueError: If the snaptime string is invalid.
+    """
+    return CompiledSnaptime(tuple(parse(snaptime)))
