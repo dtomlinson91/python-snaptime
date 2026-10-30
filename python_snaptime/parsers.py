@@ -12,7 +12,18 @@ if TYPE_CHECKING:
     import pendulum
 
 
-def _parse_raw_snaptime(snaptime: str) -> list[Snaptime]:
+def parse(snaptime: str) -> list[Snaptime]:
+    """Parse a snaptime string into a list of snaptimes.
+
+    Args:
+        snaptime (str): The snaptime string to parse, for example `@d-2h+10m`.
+
+    Returns:
+        list[Snaptime]: The snaptimes in the order that they occur in the string.
+
+    Raises:
+        ValueError: If the snaptime string is invalid.
+    """
     invalid = re.search(r"[^@+\-\w]", snaptime)
     if invalid is not None:
         msg = f"Snaptime string is invalid: unknown character `{invalid.group()}`."
@@ -51,7 +62,7 @@ def parse_snaptime_string(snaptime: str, datetime: pendulum.DateTime) -> pendulu
     Returns:
         pendulum.DateTime: The resulting snapped datetime.
     """
-    parsed_snaptimes = _parse_raw_snaptime(snaptime)
+    parsed_snaptimes = parse(snaptime)
     for _snaptime in parsed_snaptimes:
         datetime = handle_timesnapping(_snaptime, datetime)
     return datetime
