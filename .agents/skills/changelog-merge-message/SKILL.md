@@ -9,8 +9,12 @@ In the repos this skill is for, PRs are squash-merged into the default branch. T
 
 The output of this skill is two pieces of text that the user pastes into the "Squash and merge" form of the Git host:
 
-1. **Commit message**: the subject line.
-2. **Extended description**: the commit body.
+1. **Commit message**: the subject line. It is also the PR title.
+2. **Extended description**: the commit body. It is also the PR body.
+
+The PR body holds only the changelog text for users. Footer lines such as `BREAKING CHANGE:` or `Refs:` never go in the PR body or in the extended description. git-cliff copies them into the changelog. Put them in a comment on the PR.
+
+The skill can also add one preprocessor to the git-cliff config. See [The PR number](#the-pr-number).
 
 Do not commit, merge or push. The user does the merge.
 
@@ -72,11 +76,13 @@ Format: `<type>[(scope)][!]: <Summary>`
 
 - Match the capital letter at the start of the existing summaries. If the template applies `upper_first`, start with a capital letter anyway, because the Git host does not apply it.
 - Use the imperative: "Add", "Fix", "Update", "Make".
-- Put code names in backticks: endpoints, commands, options, parameters and fields.
+- Put each code name in backticks. Code names include function, class, method, parameter, option, field, command, endpoint, module and file names. Literal values and syntax are code too, for example `@15m` or `str(Snaptime)`.
+- The Git host and the changelog render the subject as Markdown. Without backticks, a name such as `__str__` shows as bold text, and the reader cannot see that it is code.
+- If the user, a ticket or a plan gives the subject without backticks, add them. Do not change the other words.
 - Keep it to one line, about 72 characters or fewer.
 - Do not put a full stop at the end.
 - Do not put a ticket ID in the summary, unless the existing entries do this.
-- Some Git hosts add ` (#1234)` to the default squash title. Leave it if it is there, and do not add it if it is not.
+- Do not add the PR number, for example ` (#1234)`. See [The PR number](#the-pr-number).
 
 Examples:
 
@@ -88,6 +94,29 @@ docs: Add the missing `limit` parameter to the API docs
 feat!: Remove the deprecated `v1` endpoints
 ```
 
+### The PR number
+
+GitHub adds ` (#<number>)` to the end of the default squash title. The "Default commit message" setting of the repo chooses only the source of the title and the body. No setting removes the number.
+
+By default, remove the number from the changelog with a preprocessor:
+
+1. Read `commit_preprocessors` in the git-cliff config. If there is no git-cliff config, do not create one. Tell the user, and give only the last two options in step 5.
+2. If an entry already matches the PR number, do not change the config. Such an entry can remove the number or add a link to the PR. Tell the user that the config already handles the number.
+3. If not, add this entry to the end of `commit_preprocessors`. If the key does not exist, add it to the `git` table of the config.
+
+   ```toml
+   # GitHub adds the PR number to the squash title
+   { pattern = '(?m) \(#[0-9]+\)$', replace = "" },
+   ```
+
+4. Tell the user that you changed the config, and name the file. Ask the user to say explicitly if they want to keep the change. Do not take silence, or an answer to a different question, as a yes.
+5. Give the user these options:
+   - **Keep the preprocessor.** git-cliff removes the number from the end of each line of the message. The git history keeps the number. This works for each merge, also when nobody removes the number by hand.
+   - **Remove the number at each merge.** In the merge box, replace the whole title with the commit message. Or merge with the CLI: `gh pr merge <number> --squash --subject "<commit message>" --body "<extended description>"`. GitHub uses the subject exactly as given.
+   - **Keep the number in the changelog.** Each entry then ends with ` (#<number>)`. A different preprocessor can change the number into a link to the PR.
+
+If the user does not keep the preprocessor, remove the entry that you added. Leave the rest of the config as it was.
+
 ## Step 6: Write the extended description
 
 The Git host fills the extended description with a list of every commit on the branch. Replace that list. A list of commits ("* fix tests", "* formatting") tells a user nothing, and git-cliff copies every line into the changelog.
@@ -96,12 +125,14 @@ Write for a user who reads the release notes. Match the length and tone of the e
 
 - Use one or two plain sentences, or two to four short bullets. Do not use both a long paragraph and a long list.
 - Write bullets in the format the changelog already uses. If there is no example, start each bullet with `- `, in lower case, with no full stop. Put one fact in each bullet.
+- Put each code name in backticks, as in the subject.
 - For a breaking change, list each old and new shape, for example "`count` is now `total`".
 
 Leave the body empty if the subject says everything. A one-line fix does not need a body.
 
 Do not put these in the body:
 
+- Footer lines, for example `BREAKING CHANGE:`, `Refs:` or `Co-authored-by:`. Put them in a comment on the PR. To mark a breaking change, use `!` in the subject.
 - Ticket IDs, PR numbers or branch names.
 - Lock file changes, test changes, formatting, CI changes or other internal details.
 - Names of internal files or functions, unless the user calls them.
@@ -113,7 +144,7 @@ Do not run `git cliff` to preview the entry.
 
 ## Output
 
-Give only the two parts, in separate code blocks, so that the user can copy each one:
+Give only the two parts, in separate code blocks, so that the user can copy each one. If the change needs footer lines, give them in a third code block with the heading **PR comment**.
 
 **Commit message**
 
@@ -128,4 +159,4 @@ Give only the two parts, in separate code blocks, so that the user can copy each
 - <fact>
 ```
 
-Do not add notes, previews or other text after the code blocks. Put any warning from Steps 1, 3 or 4 before the code blocks, for example a missing config, a body that will not show, or a breaking change.
+Do not add notes, previews or other text after the code blocks. Put any warning from Steps 1, 3, 4 or 5 before the code blocks, for example a missing config, a body that will not show, or a breaking change. Also put the change to the git-cliff config, the question about it and the options there.

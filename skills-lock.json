@@ -6,7 +6,7 @@
       "sourceUrl": "ssh://git@plex-hetzner-1.tail9e2bf.ts.net:2222/dtomlinson/llm-skills.git",
       "sourceType": "git",
       "skillPath": "skills/changelog-merge-message/SKILL.md",
-      "computedHash": "1037c12a47fa06758be4782a73257b6eb4c56120b1d71793748ee49df32edffa"
+      "computedHash": "f4e218ab5e5ae214a2f953d062954d1faf12c7be3bbe24a18499b8b3c0786b9a"
     },
     "initialise-changelog": {
       "source": "ssh://git@plex-hetzner-1.tail9e2bf.ts.net:2222/dtomlinson/llm-skills.git",
