@@ -1,12 +1,13 @@
 import re
 import time
+from dataclasses import FrozenInstanceError
 from datetime import date, datetime, timedelta, timezone, tzinfo
 from zoneinfo import ZoneInfo
 
 import pendulum
 import pytest
 import python_snaptime
-from python_snaptime import Action, Snaptime, Unit, apply, parse, snap
+from python_snaptime import Action, CompiledSnaptime, Snaptime, Unit, apply, compile, parse, snap
 
 
 class TestSnap:
@@ -729,3 +730,147 @@ class TestApply:
         # assert
         assert python_snaptime.apply is apply
         assert "apply" in python_snaptime.__all__
+
+
+class TestCompile:
+    @pytest.mark.parametrize(
+        "dtm,snap_dtm,expected_type",
+        [
+            (pendulum.datetime(2024, 12, 30, 18, 52), pendulum.datetime(2024, 12, 29), pendulum.DateTime),
+            (
+                pendulum.datetime(2024, 12, 30, 18, 52, tz="Europe/London"),
+                pendulum.datetime(2024, 12, 29, tz="Europe/London"),
+                pendulum.DateTime,
+            ),
+            (datetime(2024, 12, 30, 18, 52), datetime(2024, 12, 29), datetime),
+            (
+                datetime(2024, 12, 30, 18, 52, tzinfo=ZoneInfo("America/New_York")),
+                datetime(2024, 12, 29, tzinfo=ZoneInfo("America/New_York")),
+                datetime,
+            ),
+        ],
+        ids=["pendulum", "pendulum_timezone", "datetime_naive", "datetime_aware"],
+    )
+    def test_compile_apply_matches_snap(self, dtm: datetime, snap_dtm: datetime, expected_type: type[datetime]):
+        # act
+        result = compile("-1d@d").apply(dtm)
+
+        # assert
+        assert result == snap_dtm
+        assert result == snap(dtm, "-1d@d")
+        assert type(result) is expected_type
+        assert result.tzinfo is dtm.tzinfo
+
+    def test_compile_apply_many_times(self):
+        # arrange
+        compiled = compile("@d-2h")
+        tz = ZoneInfo("Europe/London")
+        dtms = [
+            pendulum.datetime(2024, 12, 30, 18, 52),
+            datetime(2025, 3, 1, 0, 30),
+            datetime(2025, 3, 1, 0, 30, tzinfo=tz),
+        ]
+
+        # act
+        results = [compiled.apply(dtm) for dtm in dtms]
+
+        # assert
+        assert results == [
+            pendulum.datetime(2024, 12, 29, 22, 0),
+            datetime(2025, 2, 28, 22, 0),
+            datetime(2025, 2, 28, 22, 0, tzinfo=tz),
+        ]
+        assert [type(result) for result in results] == [pendulum.DateTime, datetime, datetime]
+
+    def test_compile_snaptimes(self):
+        # act
+        compiled = compile("@d-2h")
+
+        # assert
+        assert compiled.snaptimes == (
+            Snaptime(action=Action.SNAP, unit=Unit.DAY),
+            Snaptime(action=Action.SUB, unit=Unit.HOUR, time_int=2),
+        )
+
+    @pytest.mark.parametrize(
+        "snaptime,result",
+        [
+            ("@d-2h", "@d-2h"),
+            ("@days-2hours+10minutes", "@d-2h+10m"),
+            ("@15m", "@15m"),
+        ],
+    )
+    def test_compile_str(self, snaptime: str, result: str):
+        # act/assert
+        assert str(compile(snaptime)) == result
+
+    @pytest.mark.parametrize("snaptime", ["@ms", "@d-h", "", "@d 2h"])
+    def test_compile_invalid(self, snaptime: str):
+        # act/assert
+        with pytest.raises(ValueError, match="Snaptime string is invalid"):
+            compile(snaptime)
+
+    def test_compile_equal_and_hashable(self):
+        # act
+        first = compile("@d-2h")
+        second = compile("@day-2hours")
+
+        # assert
+        assert first == second
+        assert hash(first) == hash(second)
+        assert first != compile("@d")
+
+    def test_compile_immutable(self):
+        # arrange
+        compiled = compile("@d")
+
+        # act/assert
+        with pytest.raises(FrozenInstanceError):
+            compiled.snaptimes = ()
+
+    def test_compile_repr(self):
+        # act/assert
+        assert repr(compile("@d")) == (
+            "CompiledSnaptime(snaptimes=(Snaptime(action=<Action.SNAP: '@'>, unit=<Unit.DAY: ('d', 'day', 'days')>, "
+            "time_int=None),))"
+        )
+
+    def test_compiled_snaptime_converts_list_to_tuple(self):
+        # arrange
+        snaptimes = [Snaptime(action=Action.SNAP, unit=Unit.DAY)]
+
+        # act
+        compiled = CompiledSnaptime(snaptimes)
+
+        # assert
+        assert compiled.snaptimes == (Snaptime(action=Action.SNAP, unit=Unit.DAY),)
+        assert compiled.apply(datetime(2024, 12, 30, 18, 52)) == datetime(2024, 12, 30)
+
+    def test_compiled_snaptime_no_snaptimes(self):
+        # arrange
+        dtm = pendulum.datetime(2024, 12, 30, 18, 52)
+
+        # act
+        result = CompiledSnaptime(()).apply(dtm)
+
+        # assert
+        assert result == dtm
+        assert type(result) is pendulum.DateTime
+        assert str(CompiledSnaptime(())) == ""
+
+    def test_compile_apply_invalid_datetime(self):
+        # arrange
+        dtm = date(2024, 12, 30)
+
+        # act/assert
+        with pytest.raises(
+            TypeError, match=re.escape("Invalid datetime type. Must be pendulum.DateTime or datetime.datetime.")
+        ):
+            compile("@d").apply(dtm)
+
+    def test_compile_exported_from_package(self):
+        # assert
+        assert python_snaptime.compile is compile
+        assert python_snaptime.CompiledSnaptime is CompiledSnaptime
+        assert "compile" in python_snaptime.__all__
+        assert "CompiledSnaptime" in python_snaptime.__all__
