@@ -48,18 +48,31 @@ def snap(dtm: pendulum.DateTime | dt.datetime, snap: str) -> pendulum.DateTime |
     return snap_dtm
 
 
-def snap_now(snaptime: str, tz: str | dt.tzinfo | None = None) -> pendulum.DateTime:
+@overload
+def snap_now(
+    snaptime: str, tz: str | pendulum.Timezone | pendulum.FixedTimezone | None = None
+) -> pendulum.DateTime: ...
+
+
+@overload
+def snap_now(snaptime: str, tz: dt.tzinfo) -> dt.datetime: ...
+
+
+def snap_now(snaptime: str, tz: str | dt.tzinfo | None = None) -> pendulum.DateTime | dt.datetime:
     """Transform the current time using relative time modifiers.
 
     Args:
         snaptime (str): The snaptime string defining the relative time transformation.
-        tz (str | dt.tzinfo | None): The timezone of the current time. Defaults to UTC.
+        tz (str | dt.tzinfo | None): The timezone of the current time. Defaults to UTC. A timezone name, a
+            pendulum timezone or None gives a pendulum.DateTime. Any other tzinfo, for example a
+            zoneinfo.ZoneInfo, gives a datetime.datetime.
 
     Returns:
-        pendulum.DateTime: The resulting snapped datetime in the timezone `tz`.
+        pendulum.DateTime | dt.datetime: The resulting snapped datetime in the timezone `tz`.
     """
-    now = pendulum.now(tz if isinstance(tz, str) else "UTC")
-    if isinstance(tz, dt.tzinfo):
-        # pendulum loses a non-pendulum tzinfo when it snaps, so convert it to a pendulum timezone
-        now = pendulum.instance(dt.datetime.combine(now.date(), now.time(), now.tzinfo).astimezone(tz))
-    return snap(now, snaptime)
+    now = pendulum.now("UTC")
+    if tz is None:
+        return snap(now, snaptime)
+    if isinstance(tz, (str, pendulum.Timezone, pendulum.FixedTimezone)):
+        return snap(now.in_timezone(tz), snaptime)
+    return snap(dt.datetime.combine(now.date(), now.time(), now.tzinfo).astimezone(tz), snaptime)

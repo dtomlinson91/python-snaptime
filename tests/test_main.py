@@ -507,7 +507,7 @@ class TestSnapNow:
         # assert
         assert type(result) is pendulum.DateTime
         assert result == pendulum.datetime(2024, 12, 30, tz="UTC")
-        assert result.utcoffset() == timedelta(0)
+        assert result.timezone_name == "UTC"
 
     def test_snap_now_timezone_string(self):
         # act
@@ -521,17 +521,16 @@ class TestSnapNow:
     @pytest.mark.parametrize(
         "tz,snaptime,snap_dtm",
         [
-            ("Asia/Tokyo", "@d", datetime(2024, 12, 31, tzinfo=ZoneInfo("Asia/Tokyo"))),
-            (ZoneInfo("America/New_York"), "@d-2h", datetime(2024, 12, 29, 22, tzinfo=ZoneInfo("America/New_York"))),
+            ("Asia/Tokyo", "@d", pendulum.datetime(2024, 12, 31, tz="Asia/Tokyo")),
             (
-                pendulum.timezone("Europe/Paris"),
-                "@m+5m",
-                datetime(2024, 12, 30, 19, 57, tzinfo=ZoneInfo("Europe/Paris")),
+                pendulum.timezone("America/New_York"),
+                "@d-2h",
+                pendulum.datetime(2024, 12, 29, 22, tz="America/New_York"),
             ),
-            (timezone(timedelta(hours=-10)), "@d", datetime(2024, 12, 30, tzinfo=timezone(timedelta(hours=-10)))),
+            (pendulum.timezone(-36000), "@m+5m", pendulum.datetime(2024, 12, 30, 8, 57, tz=pendulum.timezone(-36000))),
         ],
     )
-    def test_snap_now_timezone(self, tz: str | tzinfo, snaptime: str, snap_dtm: datetime):
+    def test_snap_now_pendulum_timezone(self, tz: str | tzinfo, snaptime: str, snap_dtm: pendulum.DateTime):
         # act
         result = snap_now(snaptime, tz=tz)
 
@@ -539,3 +538,26 @@ class TestSnapNow:
         assert type(result) is pendulum.DateTime
         assert result == snap_dtm
         assert result.utcoffset() == snap_dtm.utcoffset()
+
+    @pytest.mark.parametrize(
+        "tz,snaptime,snap_dtm",
+        [
+            (ZoneInfo("Asia/Tokyo"), "@d", datetime(2024, 12, 31, tzinfo=ZoneInfo("Asia/Tokyo"))),
+            (ZoneInfo("America/New_York"), "@d-2h", datetime(2024, 12, 29, 22, tzinfo=ZoneInfo("America/New_York"))),
+            (
+                timezone(timedelta(hours=-10)),
+                "@m+5m",
+                datetime(2024, 12, 30, 8, 57, tzinfo=timezone(timedelta(hours=-10))),
+            ),
+            (timezone.utc, "@h", datetime(2024, 12, 30, 18, tzinfo=timezone.utc)),
+        ],
+    )
+    def test_snap_now_datetime_timezone(self, tz: tzinfo, snaptime: str, snap_dtm: datetime):
+        # act
+        result = snap_now(snaptime, tz=tz)
+
+        # assert
+        assert type(result) is datetime
+        assert result == snap_dtm
+        assert result.utcoffset() == snap_dtm.utcoffset()
+        assert result.tzinfo is tz
