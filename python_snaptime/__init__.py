@@ -1,7 +1,19 @@
 """Python Snaptime package."""
 
 from python_snaptime.handlers import handle_timesnapping
-from python_snaptime.main import snap, snap_now
+from python_snaptime.main import apply, snap, snap_now, snap_range
 from python_snaptime.models import Action, Snaptime, Unit
+from python_snaptime.parsers import parse, to_string
 
-__all__ = ["Action", "Snaptime", "Unit", "handle_timesnapping", "snap", "snap_now"]
+__all__ = [
+    "Action",
+    "Snaptime",
+    "Unit",
+    "apply",
+    "handle_timesnapping",
+    "parse",
+    "snap",
+    "snap_now",
+    "snap_range",
+    "to_string",
+]

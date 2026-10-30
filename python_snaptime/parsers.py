@@ -9,10 +9,23 @@ from python_snaptime.handlers import handle_timesnapping
 from python_snaptime.models import Snaptime
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     import pendulum
 
 
-def _parse_raw_snaptime(snaptime: str) -> list[Snaptime]:
+def parse(snaptime: str) -> list[Snaptime]:
+    """Parse a snaptime string into a list of snaptimes.
+
+    Args:
+        snaptime (str): The snaptime string to parse, for example `@d-2h+10m`.
+
+    Returns:
+        list[Snaptime]: The snaptimes in the order that they occur in the string.
+
+    Raises:
+        ValueError: If the snaptime string is invalid.
+    """
     invalid = re.search(r"[^@+\-\w]", snaptime)
     if invalid is not None:
         msg = f"Snaptime string is invalid: unknown character `{invalid.group()}`."
@@ -41,6 +54,18 @@ def _parse_raw_snaptime(snaptime: str) -> list[Snaptime]:
     return results
 
 
+def to_string(snaptimes: Iterable[Snaptime]) -> str:
+    """Convert snaptimes to a snaptime string.
+
+    Args:
+        snaptimes (Iterable[Snaptime]): The snaptimes to convert, in the order to apply them.
+
+    Returns:
+        str: The snaptime string, for example `@d-2h`.
+    """
+    return "".join(str(snaptime) for snaptime in snaptimes)
+
+
 def parse_snaptime_string(snaptime: str, datetime: pendulum.DateTime) -> pendulum.DateTime:
     """Parse a datetime using a snaptime string.
 
@@ -51,7 +76,7 @@ def parse_snaptime_string(snaptime: str, datetime: pendulum.DateTime) -> pendulu
     Returns:
         pendulum.DateTime: The resulting snapped datetime.
     """
-    parsed_snaptimes = _parse_raw_snaptime(snaptime)
+    parsed_snaptimes = parse(snaptime)
     for _snaptime in parsed_snaptimes:
         datetime = handle_timesnapping(_snaptime, datetime)
     return datetime
