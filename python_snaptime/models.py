@@ -38,6 +38,19 @@ class Unit(Enum):
         return None  # pragma: no cover
 
 
+_SNAP_MULTIPLE_LIMITS = {Unit.SECOND: 60, Unit.MINUTE: 60, Unit.HOUR: 24}
+
+
+def _verify_snap_multiple(unit: str | Unit, time_int: int) -> None:
+    limit = _SNAP_MULTIPLE_LIMITS.get(Unit(unit))
+    if limit is None:
+        msg = "Snaptime string is invalid: can only snap to a multiple of seconds, minutes or hours."
+        raise ValueError(msg)
+    if time_int < 1 or limit % time_int != 0:
+        msg = f"Snaptime string is invalid: a snap multiple must divide {limit}, but {time_int} does not."
+        raise ValueError(msg)
+
+
 class SnaptimeDict(TypedDict, total=False):
     """Dictionary representing a snaptime configuration."""
 
@@ -65,9 +78,6 @@ class Snaptime(BaseModel):
             raise ValueError(msg)
 
         if action == Action.SNAP:
-            if time_int is not None:
-                msg = "Snaptime string is invalid: cannot use a time integer when snapping."
-                raise ValueError(msg)
             if unit is None:
                 msg = "Snaptime string is invalid: missing time unit when snapping."
                 raise ValueError(msg)
@@ -77,6 +87,8 @@ class Snaptime(BaseModel):
             if unit in Unit.MICROSECOND.value:
                 msg = "Snaptime string is invalid: cannot snap to nearest microsecond."
                 raise ValueError(msg)
+            if time_int is not None:
+                _verify_snap_multiple(unit, time_int)
         elif action in (Action.ADD, Action.SUB):
             if time_int is None:
                 msg = "Snaptime string is invalid: missing time integer for time addition or subtraction."
