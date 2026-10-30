@@ -24,6 +24,13 @@ class TestParseRawSnaptime:
         # assert
         assert results == snap_results
 
+    def test_parse_raw_snaptime_snap_multiple(self):
+        # act
+        results = _parse_raw_snaptime("@15m")
+
+        # assert
+        assert results == [Snaptime(action=Action.SNAP, unit=Unit.MINUTE, time_int=15)]
+
     def test_parse_raw_snaptime_invalid(self, mocker):
         # arrange
         snaptime = ""
@@ -121,6 +128,9 @@ class TestToString:
             ("@mon+1month-3minutes", "@mon+1mon-3m"),
             ("@q-1qtr@w+500ms+10us", "@q-1q@w+500ms+10us"),
             ("-1d@d+1y@y-2sec@s", "-1d@d+1y@y-2s@s"),
+            ("@15m", "@15m"),
+            ("@d-2h@15minutes", "@d-2h@15m"),
+            ("@30sec+1h@2hours", "@30s+1h@2h"),
         ],
     )
     def test_to_string_round_trip(self, snaptime: str, result: str):

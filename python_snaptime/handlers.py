@@ -6,15 +6,20 @@ from python_snaptime.models import Action, Snaptime, Unit
 
 
 def _handle_snap_cases(snap: Snaptime, dtm: pendulum.DateTime) -> pendulum.DateTime:
-    if snap.time_int is not None:
-        msg = "Time integer is not allowed for SNAP action."
+    if snap.time_int is not None and snap.unit not in (Unit.SECOND, Unit.MINUTE, Unit.HOUR):
+        msg = "Time integer is allowed for SNAP action only with seconds, minutes or hours."
         raise ValueError(msg)
+    multiple = 1 if snap.time_int is None else snap.time_int
+    # set() floors in local wall time and keeps fold across a DST change
     if snap.unit == Unit.SECOND:
         dtm = dtm.start_of("second")
+        dtm = dtm.set(second=dtm.second - dtm.second % multiple)
     elif snap.unit == Unit.MINUTE:
         dtm = dtm.start_of("minute")
+        dtm = dtm.set(minute=dtm.minute - dtm.minute % multiple)
     elif snap.unit == Unit.HOUR:
         dtm = dtm.start_of("hour")
+        dtm = dtm.set(hour=dtm.hour - dtm.hour % multiple)
     elif snap.unit == Unit.DAY:
         dtm = dtm.start_of("day")
     elif snap.unit == Unit.WEEK:

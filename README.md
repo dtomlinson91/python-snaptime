@@ -44,6 +44,8 @@ A snaptime string can contain only `@`, `+`, `-`, digits and the unit strings in
 > [!NOTE]
 > `@w` snaps to the start of the week on Monday. In Splunk, `@w` snaps to Sunday.
 
+`@` can take a multiple of `s`, `m` or `h`. For example, `@15m` snaps to 00, 15, 30 or 45 minutes past the hour. The multiple must divide 60 for `s` and `m`, and 24 for `h`. `@1m` is the same as `@m`. Splunk does not support this syntax.
+
 ## Examples
 
 ### Timezones
@@ -140,6 +142,7 @@ now = pendulum.datetime(2024, 12, 30, 18, 52)  # Monday
 
 snap(now, "@d")                             # 2024-12-30 00:00, start of today
 snap(now, "@d-2h+10m")                      # 2024-12-29 22:10
+snap(now, "@15m")                           # 2024-12-30 18:45, 15-minute bucket
 
 to_string(ops)          # "@d-2h"
 ```
