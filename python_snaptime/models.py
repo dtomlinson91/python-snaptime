@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import TypedDict
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 
 class Action(str, Enum):
@@ -53,6 +53,17 @@ class Snaptime(BaseModel):
     unit: Unit | None = None
     time_int: int | None = None
 
+    def __str__(self) -> str:
+        """Return the snaptime string of this snaptime, for example `@d` or `-2h`.
+
+        Returns:
+            str: The snaptime string, with the shortest string of the unit.
+        """
+        action = self.action.value if self.action is not None else ""
+        time_int = str(self.time_int) if self.time_int is not None else ""
+        unit = self.unit.value[0] if self.unit is not None else ""
+        return f"{action}{time_int}{unit}"
+
     @model_validator(mode="before")
     @classmethod
     def _verify_model(cls, values: SnaptimeDict) -> SnaptimeDict:
@@ -85,3 +96,11 @@ class Snaptime(BaseModel):
                 msg = "Snaptime string is invalid: missing time unit for time addition or subtraction."
                 raise ValueError(msg)
         return values
+
+    @field_validator("time_int")
+    @classmethod
+    def _verify_time_int(cls, time_int: int | None) -> int | None:
+        if time_int is not None and time_int < 0:
+            msg = "Snaptime string is invalid: time integer cannot be negative."
+            raise ValueError(msg)
+        return time_int
