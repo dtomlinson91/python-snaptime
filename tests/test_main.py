@@ -497,27 +497,39 @@ class TestSnap:
 
 class TestApply:
     @pytest.mark.parametrize(
-        "dtm",
+        "dtm,expected_type",
         [
-            pendulum.datetime(2024, 12, 30, 13, 1, 10, 999999),
-            pendulum.datetime(2024, 12, 30, 13, 1, 10, 999999, tz="Europe/London"),
-            datetime(2024, 12, 30, 13, 1, 10, 999999),
-            datetime(2024, 12, 30, 13, 1, 10, 999999, tzinfo=ZoneInfo("America/New_York")),
+            (pendulum.datetime(2024, 12, 30, 13, 1, 10, 999999), pendulum.DateTime),
+            (pendulum.datetime(2024, 12, 30, 13, 1, 10, 999999, tz="Europe/London"), pendulum.DateTime),
+            (datetime(2024, 12, 30, 13, 1, 10, 999999), datetime),
+            (datetime(2024, 12, 30, 13, 1, 10, 999999, tzinfo=ZoneInfo("America/New_York")), datetime),
         ],
         ids=["pendulum", "pendulum_timezone", "datetime_naive", "datetime_aware"],
     )
-    def test_apply_matches_snap(self, dtm: datetime):
+    def test_apply_matches_snap(self, dtm: datetime, expected_type: type[datetime]):
         # act
         result = apply(dtm, parse("@d-2h+10m"))
 
         # assert
         assert result == snap(dtm, "@d-2h+10m")
-        assert type(result) is type(dtm)
+        assert type(result) is expected_type
         assert result.tzinfo is dtm.tzinfo
 
-    def test_apply_snaptimes_without_string(self):
+    @pytest.mark.parametrize(
+        "dtm,snap_dtm,expected_type",
+        [
+            (pendulum.datetime(2024, 12, 30, 18, 52), pendulum.datetime(2024, 12, 29, 22, 10), pendulum.DateTime),
+            (datetime(2024, 12, 30, 18, 52), datetime(2024, 12, 29, 22, 10), datetime),
+            (
+                datetime(2024, 12, 30, 18, 52, tzinfo=ZoneInfo("Europe/London")),
+                datetime(2024, 12, 29, 22, 10, tzinfo=ZoneInfo("Europe/London")),
+                datetime,
+            ),
+        ],
+        ids=["pendulum", "datetime_naive", "datetime_aware"],
+    )
+    def test_apply_snaptimes_without_string(self, dtm: datetime, snap_dtm: datetime, expected_type: type[datetime]):
         # arrange
-        dtm = pendulum.datetime(2024, 12, 30, 18, 52)
         snaptimes = (
             Snaptime(action=Action.SNAP, unit=Unit.DAY),
             Snaptime(action=Action.SUB, unit=Unit.HOUR, time_int=2),
@@ -528,31 +540,47 @@ class TestApply:
         result = apply(dtm, snaptimes)
 
         # assert
-        assert result == pendulum.datetime(2024, 12, 29, 22, 10)
+        assert result == snap_dtm
+        assert type(result) is expected_type
 
     def test_apply_parsed_snaptimes_many_times(self):
         # arrange
         snaptimes = parse("@d-2h")
-        dtms = [pendulum.datetime(2024, 12, 30, 18, 52), pendulum.datetime(2025, 3, 1, 0, 30)]
+        tz = ZoneInfo("Europe/London")
+        dtms = [
+            pendulum.datetime(2024, 12, 30, 18, 52),
+            datetime(2025, 3, 1, 0, 30),
+            datetime(2025, 3, 1, 0, 30, tzinfo=tz),
+        ]
 
         # act
         results = [apply(dtm, snaptimes) for dtm in dtms]
 
         # assert
-        assert results == [pendulum.datetime(2024, 12, 29, 22, 0), pendulum.datetime(2025, 2, 28, 22, 0)]
+        assert results == [
+            pendulum.datetime(2024, 12, 29, 22, 0),
+            datetime(2025, 2, 28, 22, 0),
+            datetime(2025, 2, 28, 22, 0, tzinfo=tz),
+        ]
+        assert [type(result) for result in results] == [pendulum.DateTime, datetime, datetime]
 
     @pytest.mark.parametrize(
-        "dtm",
-        [pendulum.datetime(2024, 12, 30, 13, 1, 10, 999999), datetime(2024, 12, 30, 13, 1, 10, 999999)],
-        ids=["pendulum", "datetime"],
+        "dtm,expected_type",
+        [
+            (pendulum.datetime(2024, 12, 30, 13, 1, 10, 999999), pendulum.DateTime),
+            (datetime(2024, 12, 30, 13, 1, 10, 999999), datetime),
+            (datetime(2024, 12, 30, 13, 1, 10, 999999, tzinfo=ZoneInfo("America/New_York")), datetime),
+        ],
+        ids=["pendulum", "datetime_naive", "datetime_aware"],
     )
-    def test_apply_no_snaptimes(self, dtm: datetime):
+    def test_apply_no_snaptimes(self, dtm: datetime, expected_type: type[datetime]):
         # act
         result = apply(dtm, [])
 
         # assert
         assert result == dtm
-        assert type(result) is type(dtm)
+        assert type(result) is expected_type
+        assert result.tzinfo is dtm.tzinfo
 
     def test_apply_invalid_datetime(self):
         # arrange
