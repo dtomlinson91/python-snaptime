@@ -69,13 +69,43 @@ class TestSnaptime:
         ):
             Snaptime(**snaptime)
 
-    def test_snaptime_verify_snap_no_time_int(self):
+    @pytest.mark.parametrize(
+        "unit,time_int",
+        [("s", 1), ("s", 30), ("m", 1), ("m", 15), ("m", 60), ("h", 1), ("h", 6), ("h", 24), (Unit.MINUTE, 15)],
+    )
+    def test_snaptime_verify_snap_multiple(self, unit, time_int):
+        # act
+        snaptime = Snaptime(action="@", unit=unit, time_int=time_int)
+
+        # assert
+        assert snaptime.time_int == time_int
+
+    @pytest.mark.parametrize("unit", ["d", "w", "mon", "q", "y", Unit.DAY])
+    def test_snaptime_verify_snap_multiple_unit(self, unit):
         # arrange
-        snaptime = {"action": "@", "time_int": 2}
+        snaptime = {"action": "@", "unit": unit, "time_int": 2}
 
         # act/assert
         with pytest.raises(
-            ValueError, match=re.escape("Snaptime string is invalid: cannot use a time integer when snapping.")
+            ValueError,
+            match=re.escape("Snaptime string is invalid: can only snap to a multiple of seconds, minutes or hours."),
+        ):
+            Snaptime(**snaptime)
+
+    @pytest.mark.parametrize(
+        "unit,time_int,limit",
+        [("s", 7, 60), ("m", 7, 60), ("m", 0, 60), ("m", -15, 60), ("m", 120, 60), ("h", 5, 24), ("h", 48, 24)],
+    )
+    def test_snaptime_verify_snap_multiple_divisor(self, unit, time_int, limit):
+        # arrange
+        snaptime = {"action": "@", "unit": unit, "time_int": time_int}
+
+        # act/assert
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                f"Snaptime string is invalid: a snap multiple must divide {limit}, but {time_int} does not."
+            ),
         ):
             Snaptime(**snaptime)
 
