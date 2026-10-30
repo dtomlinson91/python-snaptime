@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from enum import Enum, StrEnum
+from enum import Enum
 from typing import TypedDict
 
 from pydantic import BaseModel, model_validator
 
 
-class Action(StrEnum):
+class Action(str, Enum):
     """Time Snapping Actions."""
 
     SNAP = "@"
