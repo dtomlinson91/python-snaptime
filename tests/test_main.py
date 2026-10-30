@@ -1,4 +1,5 @@
 import re
+import time
 from datetime import date, datetime, timedelta, timezone, tzinfo
 from zoneinfo import ZoneInfo
 
@@ -471,3 +472,23 @@ class TestSnap:
         # assert
         assert result == datetime(2024, 11, 3, 0, 0, 0, tzinfo=ZoneInfo("America/New_York"))
         assert result.utcoffset() == timedelta(hours=-4)
+
+    @pytest.fixture()
+    def local_tz_with_dst(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setenv("TZ", "Europe/London")
+        time.tzset()
+        yield
+        monkeypatch.undo()
+        time.tzset()
+
+    @pytest.mark.usefixtures("local_tz_with_dst")
+    def test_snap_datetime_naive_ignores_local_dst(self):
+        # arrange
+        dtm = datetime(2024, 3, 31, 1, 30, 0, 123457)
+
+        # act
+        result = snap(dtm, "@h")
+
+        # assert
+        assert type(result) is datetime
+        assert result == datetime(2024, 3, 31, 1, 0, 0)

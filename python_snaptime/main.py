@@ -35,7 +35,7 @@ def snap(dtm: pendulum.DateTime | dt.datetime, snap: str) -> pendulum.DateTime |
     elif isinstance(dtm, dt.datetime):  # pyright: ignore[reportUnnecessaryIsInstance]
         snap_dtm = parse_snaptime_string(snap, pendulum.instance(dtm))
     else:
-        msg = "Invalid datetime type. Must be pendulum.DateTime or dt.datetime."
+        msg = "Invalid datetime type. Must be pendulum.DateTime or datetime.datetime."
         raise TypeError(msg)
 
     if not isinstance(dtm, pendulum.DateTime):
