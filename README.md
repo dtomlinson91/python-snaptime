@@ -134,9 +134,15 @@ pip install python-snaptime
 
 ```python
 import pendulum
-from python_snaptime import snap
+from python_snaptime import snap, snap_range
 
-snapped_datetime = snap(pendulum.now(), "@d-2h+10m")
+now = pendulum.datetime(2024, 12, 30, 18, 52)  # Monday
+
+snap(now, "@d")                             # 2024-12-30 00:00, start of today
+snap(now, "@d-2h+10m")                      # 2024-12-29 22:10
+
+snap_range(now, "-1d@d", "@d")                  # (2024-12-29 00:00, 2024-12-30 00:00)
+snap_range(now, "-1d@d", "@d", inclusive=True)  # (2024-12-29 00:00, 2024-12-29 23:59:59.999999)
 ```
 
 ### Advanced
