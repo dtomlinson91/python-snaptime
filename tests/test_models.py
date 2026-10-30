@@ -1,7 +1,8 @@
 import re
+from dataclasses import FrozenInstanceError
 
 import pytest
-from python_snaptime.models import Snaptime, Unit
+from python_snaptime.models import Action, Snaptime, Unit
 
 
 @pytest.mark.parametrize(
@@ -154,3 +155,67 @@ class TestSnaptime:
             match=re.escape("Snaptime string is invalid: missing time unit for time addition or subtraction."),
         ):
             Snaptime(**snaptime)
+
+    @pytest.mark.parametrize(
+        "snaptime,action,unit,time_int",
+        [
+            ({"action": "@", "unit": "d"}, Action.SNAP, Unit.DAY, None),
+            ({"action": "+", "unit": "hours", "time_int": 2}, Action.ADD, Unit.HOUR, 2),
+            ({"action": "-", "unit": "mon", "time_int": 3}, Action.SUB, Unit.MONTH, 3),
+            ({"action": Action.SNAP, "unit": Unit.WEEK}, Action.SNAP, Unit.WEEK, None),
+        ],
+    )
+    def test_snaptime_converts_strings_to_enums(self, snaptime, action, unit, time_int):
+        # act
+        result = Snaptime(**snaptime)
+
+        # assert
+        assert result.action is action
+        assert result.unit is unit
+        assert result.time_int == time_int
+
+    @pytest.mark.parametrize("unit,name", [(Unit.MILLISECOND, "millisecond"), (Unit.MICROSECOND, "microsecond")])
+    def test_snaptime_verify_snap_unit_enum_subsecond(self, unit, name):
+        # act/assert
+        with pytest.raises(ValueError, match=re.escape(f"Snaptime string is invalid: cannot snap to nearest {name}.")):
+            Snaptime(action=Action.SNAP, unit=unit)
+
+    def test_snaptime_invalid_action(self):
+        # act/assert
+        with pytest.raises(ValueError, match=re.escape("'@@' is not a valid Action")):
+            Snaptime(action="@@", unit="d")
+
+    def test_snaptime_invalid_unit(self):
+        # act/assert
+        with pytest.raises(ValueError, match=re.escape("'xyz' is not a valid Unit")):
+            Snaptime(action="@", unit="xyz")
+
+    def test_snaptime_equality_and_hash(self):
+        # arrange
+        first = Snaptime(action="-", unit="h", time_int=2)
+        second = Snaptime(action=Action.SUB, unit=Unit.HOUR, time_int=2)
+
+        # act/assert
+        assert first == second
+        assert hash(first) == hash(second)
+        assert first != Snaptime(action="+", unit="h", time_int=2)
+
+    def test_snaptime_repr(self):
+        # act
+        result = repr(Snaptime(action="@", unit="d"))
+
+        # assert
+        assert result == "Snaptime(action=<Action.SNAP: '@'>, unit=<Unit.DAY: ('d', 'day', 'days')>, time_int=None)"
+
+    def test_snaptime_is_frozen(self):
+        # arrange
+        snaptime = Snaptime(action="@", unit="d")
+
+        # act/assert
+        with pytest.raises(FrozenInstanceError):
+            snaptime.unit = Unit.HOUR
+
+    def test_snaptime_is_keyword_only(self):
+        # act/assert
+        with pytest.raises(TypeError):
+            Snaptime("@", "d")

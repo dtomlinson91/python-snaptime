@@ -115,7 +115,7 @@ class TestSnapCases:
     def test_handle_snap_cases_with_time_int(self, start_time, unit: Unit):
         # arrange
         snap = Snaptime(action=Action.SNAP, unit=unit, time_int=None)
-        snap.time_int = 2
+        object.__setattr__(snap, "time_int", 2)
 
         # act/assert
         with pytest.raises(
@@ -280,9 +280,9 @@ class TestAdditionCases:
     def test_handle_addition_cases_without_time_int(self, start_time):
         # arrange
         snap = Snaptime(action=Action.SNAP, unit=Unit.SECOND)
-        snap.unit = Unit.SECOND
-        snap.time_int = None
-        snap.action = Action.ADD
+        object.__setattr__(snap, "unit", Unit.SECOND)
+        object.__setattr__(snap, "time_int", None)
+        object.__setattr__(snap, "action", Action.ADD)
 
         # act/assert
         with pytest.raises(ValueError, match="Time integer is required for ADD action."):
@@ -397,9 +397,9 @@ class TestSubtractionCases:
     def test_handle_subtraction_cases_without_time_int(self, start_time):
         # arrange
         snap = Snaptime(action=Action.SNAP, unit=Unit.SECOND)
-        snap.action = Action.SUB
-        snap.unit = Unit.SECOND
-        snap.time_int = None
+        object.__setattr__(snap, "action", Action.SUB)
+        object.__setattr__(snap, "unit", Unit.SECOND)
+        object.__setattr__(snap, "time_int", None)
 
         # act/assert
         with pytest.raises(ValueError, match="Time integer is required for SUB action."):

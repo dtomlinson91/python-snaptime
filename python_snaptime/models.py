@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from enum import Enum
-from typing import TypedDict
-
-from pydantic import BaseModel, model_validator
 
 
 class Action(str, Enum):
@@ -41,8 +39,8 @@ class Unit(Enum):
 _SNAP_MULTIPLE_LIMITS = {Unit.SECOND: 60, Unit.MINUTE: 60, Unit.HOUR: 24}
 
 
-def _verify_snap_multiple(unit: str | Unit, time_int: int) -> None:
-    limit = _SNAP_MULTIPLE_LIMITS.get(Unit(unit))
+def _verify_snap_multiple(unit: Unit, time_int: int) -> None:
+    limit = _SNAP_MULTIPLE_LIMITS.get(unit)
     if limit is None:
         msg = "Snaptime string is invalid: can only snap to a multiple of seconds, minutes or hours."
         raise ValueError(msg)
@@ -51,49 +49,46 @@ def _verify_snap_multiple(unit: str | Unit, time_int: int) -> None:
         raise ValueError(msg)
 
 
-class SnaptimeDict(TypedDict, total=False):
-    """Dictionary representing a snaptime configuration."""
+@dataclass(frozen=True, kw_only=True)
+class Snaptime:
+    """Model representing a snaptime configuration.
 
-    action: str | None
-    unit: str | None
-    time_int: int | None
+    The class converts a `str` value of `action` or `unit` to its `Action` or `Unit` member.
 
-
-class Snaptime(BaseModel):
-    """Model representing a snaptime configuration."""
+    Raises:
+        ValueError: If the configuration is not a valid snaptime operation.
+    """
 
     action: Action | None = None
     unit: Unit | None = None
     time_int: int | None = None
 
-    @model_validator(mode="before")
-    @classmethod
-    def _verify_model(cls, values: SnaptimeDict) -> SnaptimeDict:
-        action = values.get("action")
-        unit = values.get("unit")
-        time_int = values.get("time_int")
-
-        if action is None:
+    def __post_init__(self) -> None:
+        """Convert the action and the unit to enums, then validate the configuration."""
+        if self.action is None:
             msg = "Snaptime string is invalid: must provide either a snap `@` or time delta `+-`."
             raise ValueError(msg)
+        # frozen dataclasses block normal attribute assignment
+        object.__setattr__(self, "action", Action(self.action))
+        if self.unit is not None:
+            object.__setattr__(self, "unit", Unit(self.unit))
 
-        if action == Action.SNAP:
-            if unit is None:
+        if self.action == Action.SNAP:
+            if self.unit is None:
                 msg = "Snaptime string is invalid: missing time unit when snapping."
                 raise ValueError(msg)
-            if unit in Unit.MILLISECOND.value:
+            if self.unit == Unit.MILLISECOND:
                 msg = "Snaptime string is invalid: cannot snap to nearest millisecond."
                 raise ValueError(msg)
-            if unit in Unit.MICROSECOND.value:
+            if self.unit == Unit.MICROSECOND:
                 msg = "Snaptime string is invalid: cannot snap to nearest microsecond."
                 raise ValueError(msg)
-            if time_int is not None:
-                _verify_snap_multiple(unit, time_int)
-        elif action in (Action.ADD, Action.SUB):
-            if time_int is None:
+            if self.time_int is not None:
+                _verify_snap_multiple(self.unit, self.time_int)
+        else:
+            if self.time_int is None:
                 msg = "Snaptime string is invalid: missing time integer for time addition or subtraction."
                 raise ValueError(msg)
-            if unit is None:
+            if self.unit is None:
                 msg = "Snaptime string is invalid: missing time unit for time addition or subtraction."
                 raise ValueError(msg)
-        return values
