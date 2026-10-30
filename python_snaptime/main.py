@@ -29,6 +29,10 @@ def snap(dtm: pendulum.DateTime | dt.datetime, snap: str) -> pendulum.DateTime |
 
     Returns:
         pendulum.DateTime | dt.datetime: The resulting snapped datetime.
+
+    Raises:
+        SnaptimeError: If the snaptime string is invalid.
+        TypeError: If `dtm` is not a `pendulum.DateTime` or a `datetime.datetime`.
     """
     if isinstance(dtm, pendulum.DateTime):
         snap_dtm = parse_snaptime_string(snap, dtm)

@@ -50,6 +50,9 @@ def parse_snaptime_string(snaptime: str, datetime: pendulum.DateTime) -> pendulu
 
     Returns:
         pendulum.DateTime: The resulting snapped datetime.
+
+    Raises:
+        SnaptimeError: If the snaptime string is invalid.
     """
     parsed_snaptimes = _parse_raw_snaptime(snaptime)
     for _snaptime in parsed_snaptimes:
