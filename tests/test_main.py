@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 
 import pendulum
 import pytest
-from python_snaptime import snap
+from python_snaptime import snap, snap_range
 
 
 class TestSnap:
@@ -492,3 +492,94 @@ class TestSnap:
         # assert
         assert type(result) is datetime
         assert result == datetime(2024, 3, 31, 1, 0, 0)
+
+
+class TestSnapRange:
+    @pytest.fixture()
+    def pendulum_dtm(self):
+        return pendulum.datetime(2024, 12, 30, 18)
+
+    @pytest.mark.parametrize(
+        "inclusive,end_dtm",
+        [
+            (False, pendulum.datetime(2024, 12, 30, 0, 0, 0, 0)),
+            (True, pendulum.datetime(2024, 12, 29, 23, 59, 59, 999999)),
+        ],
+    )
+    def test_snap_range_pendulum(self, pendulum_dtm: pendulum.DateTime, inclusive: bool, end_dtm: pendulum.DateTime):
+        # act
+        result = snap_range(pendulum_dtm, "-1d@d", "@d", inclusive=inclusive)
+
+        # assert
+        assert result == (pendulum.datetime(2024, 12, 29, 0, 0, 0, 0), end_dtm)
+        assert all(isinstance(dtm, pendulum.DateTime) for dtm in result)
+        assert all(dtm.tzinfo == pendulum.UTC for dtm in result)
+
+    @pytest.mark.parametrize(
+        "inclusive,end_dtm",
+        [
+            (False, datetime(2024, 12, 30, 0, 0, 0, 0)),
+            (True, datetime(2024, 12, 29, 23, 59, 59, 999999)),
+        ],
+    )
+    def test_snap_range_datetime(self, inclusive: bool, end_dtm: datetime):
+        # arrange
+        dtm = datetime(2024, 12, 30, 18)
+
+        # act
+        result = snap_range(dtm, "-1d@d", "@d", inclusive=inclusive)
+
+        # assert
+        assert result == (datetime(2024, 12, 29, 0, 0, 0, 0), end_dtm)
+        assert all(type(dtm) is datetime and dtm.tzinfo is None for dtm in result)
+
+    @pytest.mark.parametrize(
+        "inclusive,end_dtm",
+        [
+            (False, datetime(2024, 12, 30, 0, 0, 0, 0, tzinfo=ZoneInfo("America/New_York"))),
+            (True, datetime(2024, 12, 29, 23, 59, 59, 999999, tzinfo=ZoneInfo("America/New_York"))),
+        ],
+    )
+    def test_snap_range_datetime_timezone(self, inclusive: bool, end_dtm: datetime):
+        # arrange
+        tz = ZoneInfo("America/New_York")
+        dtm = datetime(2024, 12, 30, 18, tzinfo=tz)
+
+        # act
+        result = snap_range(dtm, "-1d@d", "@d", inclusive=inclusive)
+
+        # assert
+        assert result == (datetime(2024, 12, 29, 0, 0, 0, 0, tzinfo=tz), end_dtm)
+        assert all(type(dtm) is datetime and dtm.tzinfo is tz for dtm in result)
+
+    def test_snap_range_inclusive_single_microsecond(self, pendulum_dtm: pendulum.DateTime):
+        # act
+        result = snap_range(pendulum_dtm, "@d", "@d+1us", inclusive=True)
+
+        # assert
+        assert result == (pendulum.datetime(2024, 12, 30), pendulum.datetime(2024, 12, 30))
+
+    def test_snap_range_empty_exclusive(self, pendulum_dtm: pendulum.DateTime):
+        # act
+        result = snap_range(pendulum_dtm, "@d", "@d")
+
+        # assert
+        assert result == (pendulum.datetime(2024, 12, 30), pendulum.datetime(2024, 12, 30))
+
+    def test_snap_range_empty_inclusive(self, pendulum_dtm: pendulum.DateTime):
+        # act/assert
+        with pytest.raises(
+            ValueError, match=re.escape("The range from '@d' to '@d' is empty. An inclusive range must not be empty.")
+        ):
+            snap_range(pendulum_dtm, "@d", "@d", inclusive=True)
+
+    @pytest.mark.parametrize("inclusive", [False, True])
+    def test_snap_range_reversed(self, pendulum_dtm: pendulum.DateTime, inclusive: bool):
+        # act/assert
+        with pytest.raises(ValueError, match=re.escape("The start of the range ('@d') is after the end ('-1d@d').")):
+            snap_range(pendulum_dtm, "@d", "-1d@d", inclusive=inclusive)
+
+    def test_snap_range_invalid_datetime(self):
+        # act/assert
+        with pytest.raises(TypeError, match=re.escape("Invalid datetime type.")):
+            snap_range(date(2024, 12, 30), "-1d@d", "@d")
