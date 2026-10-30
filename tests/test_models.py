@@ -1,7 +1,8 @@
 import re
+from datetime import datetime, timedelta
 
 import pytest
-from python_snaptime.models import Snaptime, Unit
+from python_snaptime.models import Snaptime, Unit, Weekday
 
 
 @pytest.mark.parametrize(
@@ -55,6 +56,15 @@ def test_microseconds(unit, result):
 
     # assert
     assert unit_result == result
+
+
+@pytest.mark.parametrize("day", range(7))
+def test_weekday_matches_datetime_weekday(day: int):
+    # arrange
+    dtm = datetime(2024, 12, 30) + timedelta(days=day)
+
+    # act/assert
+    assert Weekday(dtm.weekday()).name == dtm.strftime("%A").upper()
 
 
 class TestSnaptime:
