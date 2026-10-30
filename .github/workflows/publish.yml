@@ -10,7 +10,11 @@ permissions:
   id-token: write
 
 jobs:
+  tests:
+    uses: ./.github/workflows/tests.yml
+
   publish-package:
+    needs: tests
     runs-on: ubuntu-latest
 
     steps:
@@ -25,12 +29,6 @@ jobs:
         with:
           python-version: "3.11"
           enable-cache: true
-
-      - name: Install dependencies
-        run: uv sync --locked
-
-      - name: Run tests
-        run: uv run pytest
 
       - name: Build package
         run: uv build
