@@ -24,6 +24,13 @@ class TestParseRawSnaptime:
         # assert
         assert results == snap_results
 
+    def test_parse_raw_snaptime_snap_multiple(self):
+        # act
+        results = _parse_raw_snaptime("@15m")
+
+        # assert
+        assert results == [Snaptime(action=Action.SNAP, unit=Unit.MINUTE, time_int=15)]
+
     def test_parse_raw_snaptime_invalid(self, mocker):
         # arrange
         snaptime = ""
