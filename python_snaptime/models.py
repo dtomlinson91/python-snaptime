@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
+from python_snaptime.exceptions import SnaptimeError
+
 
 class Action(str, Enum):
     """Time Snapping Actions."""
@@ -43,7 +45,7 @@ class Snaptime:
     The class converts a `str` value of `action` or `unit` to its `Action` or `Unit` member.
 
     Raises:
-        ValueError: If the configuration is not a valid snaptime operation.
+        SnaptimeError: If the configuration is not a valid snaptime operation.
     """
 
     action: Action | None = None
@@ -54,29 +56,32 @@ class Snaptime:
         """Convert the action and the unit to enums, then validate the configuration."""
         if self.action is None:
             msg = "Snaptime string is invalid: must provide either a snap `@` or time delta `+-`."
-            raise ValueError(msg)
-        # frozen dataclasses block normal attribute assignment
-        object.__setattr__(self, "action", Action(self.action))
-        if self.unit is not None:
-            object.__setattr__(self, "unit", Unit(self.unit))
+            raise SnaptimeError(msg)
+        try:
+            # frozen dataclasses block normal attribute assignment
+            object.__setattr__(self, "action", Action(self.action))
+            if self.unit is not None:
+                object.__setattr__(self, "unit", Unit(self.unit))
+        except ValueError as exc:
+            raise SnaptimeError(str(exc)) from exc
 
         if self.action == Action.SNAP:
             if self.time_int is not None:
                 msg = "Snaptime string is invalid: cannot use a time integer when snapping."
-                raise ValueError(msg)
+                raise SnaptimeError(msg)
             if self.unit is None:
                 msg = "Snaptime string is invalid: missing time unit when snapping."
-                raise ValueError(msg)
+                raise SnaptimeError(msg)
             if self.unit == Unit.MILLISECOND:
                 msg = "Snaptime string is invalid: cannot snap to nearest millisecond."
-                raise ValueError(msg)
+                raise SnaptimeError(msg)
             if self.unit == Unit.MICROSECOND:
                 msg = "Snaptime string is invalid: cannot snap to nearest microsecond."
-                raise ValueError(msg)
+                raise SnaptimeError(msg)
         else:
             if self.time_int is None:
                 msg = "Snaptime string is invalid: missing time integer for time addition or subtraction."
-                raise ValueError(msg)
+                raise SnaptimeError(msg)
             if self.unit is None:
                 msg = "Snaptime string is invalid: missing time unit for time addition or subtraction."
-                raise ValueError(msg)
+                raise SnaptimeError(msg)

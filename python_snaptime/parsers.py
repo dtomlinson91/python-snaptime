@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
+from python_snaptime.exceptions import SnaptimeError
 from python_snaptime.handlers import handle_timesnapping
 from python_snaptime.models import Snaptime
 
@@ -16,7 +17,7 @@ def _parse_raw_snaptime(snaptime: str) -> list[Snaptime]:
     invalid = re.search(r"[^@+\-\w]", snaptime)
     if invalid is not None:
         msg = f"Snaptime string is invalid: unknown character `{invalid.group()}`."
-        raise ValueError(msg)
+        raise SnaptimeError(msg)
 
     pattern = r"(([@+-]*)(\d*)(\w*))"
     matches = re.findall(pattern, snaptime)
@@ -37,7 +38,7 @@ def _parse_raw_snaptime(snaptime: str) -> list[Snaptime]:
 
     if not results:
         msg = "Snaptime string is invalid"
-        raise ValueError(msg)
+        raise SnaptimeError(msg)
     return results
 
 
