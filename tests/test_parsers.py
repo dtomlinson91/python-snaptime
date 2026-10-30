@@ -6,7 +6,7 @@ import python_snaptime
 from pytest_mock import MockerFixture
 from python_snaptime import parsers
 from python_snaptime.models import Action, Snaptime, Unit
-from python_snaptime.parsers import parse, parse_snaptime_string, to_string
+from python_snaptime.parsers import is_valid, parse, parse_snaptime_string, to_string
 
 
 class TestParse:
@@ -55,6 +55,31 @@ class TestParse:
         # assert
         assert python_snaptime.parse is parse
         assert "parse" in python_snaptime.__all__
+
+
+class TestIsValid:
+    @pytest.mark.parametrize("snaptime", ["@d", "@d-2h", "@d-2h+10m", "-6hours", "@15m", "+0h", "-1d@d+1y@y-2sec@s"])
+    def test_is_valid_true(self, snaptime: str):
+        # act/assert
+        assert is_valid(snaptime) is True
+
+    @pytest.mark.parametrize("snaptime", ["", "@d -2h", "@d!", "@d,-2h", "@d-1.5h", "@d\n"])
+    def test_is_valid_false(self, snaptime: str):
+        # act/assert
+        assert is_valid(snaptime) is False
+
+    def test_is_valid_raises_other_errors(self, mocker: MockerFixture):
+        # arrange
+        mocker.patch.object(parsers, "parse", side_effect=ValueError("not a snaptime error"))
+
+        # act/assert
+        with pytest.raises(ValueError, match="^not a snaptime error$"):
+            is_valid("@d")
+
+    def test_is_valid_exported_from_package(self):
+        # assert
+        assert python_snaptime.is_valid is is_valid
+        assert "is_valid" in python_snaptime.__all__
 
 
 def test_parse_snaptime_string(mocker: MockerFixture):

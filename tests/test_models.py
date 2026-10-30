@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import pytest
 from python_snaptime.exceptions import SnaptimeError
 from python_snaptime.models import Action, Snaptime, Unit, Weekday
+from python_snaptime.parsers import is_valid
 
 
 @pytest.mark.parametrize(
@@ -294,3 +295,12 @@ def test_snaptime_str_action(snaptime, result):
 
     # assert
     assert snaptime_str == result
+
+
+@pytest.mark.parametrize(
+    "snaptime",
+    ["2d", "@2d", "@7m", "@0m", "@48h", "@", "@ms", "@us", "+d", "-2", "@@d", "@xyz", "+d@d"],
+)
+def test_is_valid_false_for_invalid_snaptime(snaptime: str):
+    # act/assert
+    assert is_valid(snaptime) is False
