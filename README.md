@@ -120,6 +120,9 @@ DateTime(2024, 10, 27, 2, 0, 0, tzinfo=Timezone('Europe/London'))  # post-transi
 ### pypi
 
 ```sh
+# using uv
+uv add python-snaptime
+
 # using poetry
 poetry add python-snaptime
 
@@ -143,8 +146,7 @@ You can programmatically calculate snaptimes without a snaptime string, e.g the 
 ```python
 import pendulum
 
-from python_snaptime.handlers import handle_timesnapping
-from python_snaptime.models import Action, Snaptime, Unit
+from python_snaptime import Action, Snaptime, Unit, handle_timesnapping
 
 
 def main():
@@ -161,5 +163,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 ```
