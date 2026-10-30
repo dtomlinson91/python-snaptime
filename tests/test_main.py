@@ -5,7 +5,8 @@ from zoneinfo import ZoneInfo
 
 import pendulum
 import pytest
-from python_snaptime import snap
+import python_snaptime
+from python_snaptime import Action, Snaptime, Unit, apply, parse, snap
 
 
 class TestSnap:
@@ -492,3 +493,78 @@ class TestSnap:
         # assert
         assert type(result) is datetime
         assert result == datetime(2024, 3, 31, 1, 0, 0)
+
+
+class TestApply:
+    @pytest.mark.parametrize(
+        "dtm",
+        [
+            pendulum.datetime(2024, 12, 30, 13, 1, 10, 999999),
+            pendulum.datetime(2024, 12, 30, 13, 1, 10, 999999, tz="Europe/London"),
+            datetime(2024, 12, 30, 13, 1, 10, 999999),
+            datetime(2024, 12, 30, 13, 1, 10, 999999, tzinfo=ZoneInfo("America/New_York")),
+        ],
+        ids=["pendulum", "pendulum_timezone", "datetime_naive", "datetime_aware"],
+    )
+    def test_apply_matches_snap(self, dtm: datetime):
+        # act
+        result = apply(dtm, parse("@d-2h+10m"))
+
+        # assert
+        assert result == snap(dtm, "@d-2h+10m")
+        assert type(result) is type(dtm)
+        assert result.tzinfo is dtm.tzinfo
+
+    def test_apply_snaptimes_without_string(self):
+        # arrange
+        dtm = pendulum.datetime(2024, 12, 30, 18, 52)
+        snaptimes = (
+            Snaptime(action=Action.SNAP, unit=Unit.DAY),
+            Snaptime(action=Action.SUB, unit=Unit.HOUR, time_int=2),
+            Snaptime(action=Action.ADD, unit=Unit.MINUTE, time_int=10),
+        )
+
+        # act
+        result = apply(dtm, snaptimes)
+
+        # assert
+        assert result == pendulum.datetime(2024, 12, 29, 22, 10)
+
+    def test_apply_parsed_snaptimes_many_times(self):
+        # arrange
+        snaptimes = parse("@d-2h")
+        dtms = [pendulum.datetime(2024, 12, 30, 18, 52), pendulum.datetime(2025, 3, 1, 0, 30)]
+
+        # act
+        results = [apply(dtm, snaptimes) for dtm in dtms]
+
+        # assert
+        assert results == [pendulum.datetime(2024, 12, 29, 22, 0), pendulum.datetime(2025, 2, 28, 22, 0)]
+
+    @pytest.mark.parametrize(
+        "dtm",
+        [pendulum.datetime(2024, 12, 30, 13, 1, 10, 999999), datetime(2024, 12, 30, 13, 1, 10, 999999)],
+        ids=["pendulum", "datetime"],
+    )
+    def test_apply_no_snaptimes(self, dtm: datetime):
+        # act
+        result = apply(dtm, [])
+
+        # assert
+        assert result == dtm
+        assert type(result) is type(dtm)
+
+    def test_apply_invalid_datetime(self):
+        # arrange
+        dtm = date(2024, 12, 30)
+
+        # act/assert
+        with pytest.raises(
+            TypeError, match=re.escape("Invalid datetime type. Must be pendulum.DateTime or datetime.datetime.")
+        ):
+            apply(dtm, parse("@d"))
+
+    def test_apply_exported_from_package(self):
+        # assert
+        assert python_snaptime.apply is apply
+        assert "apply" in python_snaptime.__all__
