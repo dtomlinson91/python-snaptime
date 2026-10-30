@@ -1,13 +1,11 @@
-[tool.poetry]
+[project]
 name = "python-snaptime"
-version = "0.0.0"
+dynamic = ["version"]
 description = "Easily manipulate datetime objects with relative time modifiers. Snap, shift, and chain operations on timezone-aware datetimes. E.g `@d-2h`"
-authors = ["Daniel Tomlinson <dtomlinson@panaetius.co.uk>"]
+authors = [{ name = "Daniel Tomlinson", email = "dtomlinson@panaetius.co.uk" }]
+requires-python = ">=3.10,<4"
 readme = "README.md"
 license = "ISC"
-homepage = "https://github.com/dtomlinson91/python-snaptime"
-repository = "https://github.com/dtomlinson91/python-snaptime"
-documentation = "https://github.com/dtomlinson91/python-snaptime"
 keywords = [
     "datetime",
     "time",
@@ -16,31 +14,39 @@ keywords = [
     "timesnapper",
     "snaptime ",
 ]
+dependencies = [
+    "pendulum>=2,<4",
+    "pydantic>=2.13.5,<3",
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-pendulum = ">=2,<4"
-pydantic = "^2.13.5"
-eval-type-backport = "^0.4.0"
+[project.urls]
+Homepage = "https://github.com/dtomlinson91/python-snaptime"
+Repository = "https://github.com/dtomlinson91/python-snaptime"
+Documentation = "https://github.com/dtomlinson91/python-snaptime"
 
-[tool.poetry.group.dev.dependencies]
-ruff = "^0.17.3"
-pycln = "^2.6.0"
-isort = "^9.0.2"
-pytest = "^9.2.0"
-coverage = "^7.10.7"
-pytest-mock = "^3.15.1"
-pytest-cov = "^7.1.0"
+[dependency-groups]
+dev = [
+    "ruff>=0.17.3,<0.18",
+    "pycln>=2.6.0,<3",
+    "isort>=9.0.2,<10",
+    "pytest>=9.2.0,<10",
+    "coverage>=7.10.7,<8",
+    "pytest-mock>=3.15.1,<4",
+    "pytest-cov>=7.1.0,<8",
+    "black>=26.10.1",
+]
 
+[tool.uv]
+default-groups = "all"
+cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true, tags = true } }]
 
 [build-system]
-requires = ["poetry-core", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
-build-backend = "poetry_dynamic_versioning.backend"
+requires = ["hatchling", "uv-dynamic-versioning"]
+build-backend = "hatchling.build"
 
 [tool.ruff]
 line-length = 120
 indent-width = 4
-target-version = "py311"
 # include = ["pyproject.toml", "src/**/*.py", "scripts/**/*.py"]
 # required-version = ">=X.Y.Z"
 # unsafe-fixes = true
@@ -63,6 +69,7 @@ ignore = [
     "ANN401",  # any-type
     "CPY",     # flake8-copyright
     "DTZ006",  # call-datetime-fromtimestamp
+    "C901",    # complex-structure
     # "PLR0913", # too-many-arguments
     # "FA",      # flake8-future-annotations
     # "T201",    # print
@@ -72,7 +79,7 @@ ignore = [
     # "S608",    # hardcoded-sql-expression
     # "RET503",  # implicit-return
 ]
-exclude = ["tests"]  # lint only, ruff format still formats these files
+exclude = ["tests", "scripts/test.py"]  # lint only, ruff format still formats these files
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -96,18 +103,22 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 docstring-code-format = true
 
-[tool.poetry-dynamic-versioning]
-enable = true
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
 
-[tool.poetry-dynamic-versioning.substitution]
-files = ["python_snaptime/__version__.py"]
+[tool.uv-dynamic-versioning]
+fallback-version = "0.0.0"
+
+[tool.hatch.build.hooks.version]
+path = "python_snaptime/__version__.py"
+template = '''"""The package version."""
+
+__version__ = "{version}"
+'''
 
 [tool.pyright]
 typeCheckingMode = "strict"
 ignore = ["typings/**", "tests/**"]
-
-[tool.pytest]
-mock_use_standalone_module = true
 
 [tool.coverage.report]
 exclude_also = ["if TYPE_CHECKING:"]
