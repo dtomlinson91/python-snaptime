@@ -3,20 +3,21 @@
 from __future__ import annotations
 
 import datetime as dt
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, overload
 
 import pendulum
 
 from python_snaptime.handlers import handle_timesnapping
 from python_snaptime.models import Weekday
-from python_snaptime.parsers import parse
+from python_snaptime.parsers import parse, to_string
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
     from python_snaptime.models import Snaptime
 
-__all__ = ["apply", "snap", "snap_now", "snap_range"]
+__all__ = ["CompiledSnaptime", "apply", "compile", "snap", "snap_now", "snap_range"]
 
 
 def _transform_datetime(
@@ -178,3 +179,67 @@ def snap_now(
     if isinstance(tz, (str, pendulum.Timezone, pendulum.FixedTimezone)):
         return snap(now.in_timezone(tz), snaptime, week_start=week_start)
     return snap(dt.datetime.combine(now.date(), now.time(), now.tzinfo).astimezone(tz), snaptime, week_start=week_start)
+
+
+@dataclass(frozen=True)
+class CompiledSnaptime:
+    """A parsed snaptime string that you can apply to many datetimes.
+
+    The class converts a `snaptimes` value of another sequence type to a `tuple`.
+    """
+
+    snaptimes: tuple[Snaptime, ...]
+    week_start: Weekday = Weekday.MONDAY
+
+    def __post_init__(self) -> None:
+        """Convert the snaptimes to a tuple."""
+        # frozen dataclasses block normal attribute assignment
+        object.__setattr__(self, "snaptimes", tuple(self.snaptimes))
+
+    def __str__(self) -> str:
+        """Return the snaptime string of the snaptimes, for example `@d-2h`.
+
+        Returns:
+            str: The snaptime string.
+        """
+        return to_string(self.snaptimes)
+
+    @overload
+    def apply(self, dtm: pendulum.DateTime, *, week_start: Weekday | None = ...) -> pendulum.DateTime: ...
+
+    @overload
+    def apply(self, dtm: dt.datetime, *, week_start: Weekday | None = ...) -> dt.datetime: ...
+
+    def apply(
+        self, dtm: pendulum.DateTime | dt.datetime, *, week_start: Weekday | None = None
+    ) -> pendulum.DateTime | dt.datetime:
+        """Transform a datetime with the snaptimes.
+
+        Args:
+            dtm (pendulum.DateTime | dt.datetime): The datetime to be transformed.
+            week_start (Weekday | None): The first day of the week for `@w`. The default is the
+                `week_start` of this object.
+
+        Returns:
+            pendulum.DateTime | dt.datetime: The resulting snapped datetime.
+
+        Raises:
+            TypeError: If `dtm` is not a `pendulum.DateTime` or a `datetime.datetime`.
+        """
+        return apply(dtm, self.snaptimes, week_start=self.week_start if week_start is None else week_start)
+
+
+def compile(snaptime: str, *, week_start: Weekday = Weekday.MONDAY) -> CompiledSnaptime:  # noqa: A001
+    """Parse a snaptime string into an object that you can apply to many datetimes.
+
+    Args:
+        snaptime (str): The snaptime string to parse, for example `@d-2h`.
+        week_start (Weekday): The first day of the week for `@w`. The default is Monday.
+
+    Returns:
+        CompiledSnaptime: The parsed snaptime string.
+
+    Raises:
+        ValueError: If the snaptime string is invalid.
+    """
+    return CompiledSnaptime(tuple(parse(snaptime)), week_start=week_start)
