@@ -1,7 +1,6 @@
 import re
 
 import pytest
-
 from python_snaptime.models import Snaptime, Unit
 
 
