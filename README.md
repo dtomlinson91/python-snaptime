@@ -13,6 +13,7 @@ For example, `@d-2h` will give you two hours ago from the start of the day.
 
 - Use snaptime strings to get relative dates/times for a given datetime.
 - Use [pendulum](https://github.com/python-pendulum/pendulum) or builtin [datetime](https://docs.python.org/3/library/datetime.html#datetime-objects).
+- Snap a `datetime.date` or a `pendulum.Date` with units of a day or larger, and get the same type back.
 - Timezone aware.
 - Handles daylight savings with `fold`.
 - Can snap backwards in time to the nearest second, minute, hour, day, week, month, quarter or year.
@@ -135,6 +136,8 @@ pip install python-snaptime
 ## Usage
 
 ```python
+from datetime import date
+
 import pendulum
 from python_snaptime import (
     SnaptimeError, Weekday, apply, compile, is_valid, parse, snap, snap_now, snap_range, to_string,
@@ -146,6 +149,7 @@ snap(now, "@d")                             # 2024-12-30 00:00, start of today
 snap(now, "@d-2h+10m")                      # 2024-12-29 22:10
 snap(now, "@15m")                           # 2024-12-30 18:45, 15-minute bucket
 snap(now, "@w", week_start=Weekday.SUNDAY)  # 2024-12-29 00:00
+snap(date(2024, 12, 30), "-1mon@mon")       # date(2024, 11, 1)
 snap_now("@h", tz="Europe/London")          # start of the current hour in London
 
 snap_range(now, "-1d@d", "@d")                  # (2024-12-29 00:00, 2024-12-30 00:00)
