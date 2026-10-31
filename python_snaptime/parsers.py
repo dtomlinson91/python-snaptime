@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 from python_snaptime.exceptions import SnaptimeError
 from python_snaptime.handlers import handle_timesnapping
@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 
     import pendulum
 
+NOW: Final = "now"
+"""The snaptime string for the current time, which leaves a datetime unchanged."""
+
 
 def parse(snaptime: str) -> list[Snaptime]:
     """Parse a snaptime string into a list of snaptimes.
@@ -22,11 +25,18 @@ def parse(snaptime: str) -> list[Snaptime]:
         snaptime (str): The snaptime string to parse, for example `@d-2h+10m`.
 
     Returns:
-        list[Snaptime]: The snaptimes in the order that they occur in the string.
+        list[Snaptime]: The snaptimes in the order that they occur in the string. The snaptime string
+            `now` gives an empty list.
 
     Raises:
         SnaptimeError: If the snaptime string is invalid.
     """
+    if snaptime == NOW:
+        return []
+    if NOW in snaptime.lower():
+        msg = f"Snaptime string is invalid: `{NOW}` must be the whole snaptime string, in lower case."
+        raise SnaptimeError(msg)
+
     invalid = re.search(r"[^@+\-\w]", snaptime)
     if invalid is not None:
         msg = f"Snaptime string is invalid: unknown character `{invalid.group()}`."
@@ -78,9 +88,9 @@ def to_string(snaptimes: Iterable[Snaptime]) -> str:
         snaptimes (Iterable[Snaptime]): The snaptimes to convert, in the order to apply them.
 
     Returns:
-        str: The snaptime string, for example `@d-2h`.
+        str: The snaptime string, for example `@d-2h`. No snaptimes give `now`.
     """
-    return "".join(str(snaptime) for snaptime in snaptimes)
+    return "".join(str(snaptime) for snaptime in snaptimes) or NOW
 
 
 def parse_snaptime_string(

@@ -5,8 +5,9 @@ import pytest
 import python_snaptime
 from pytest_mock import MockerFixture
 from python_snaptime import parsers
+from python_snaptime.exceptions import SnaptimeError
 from python_snaptime.models import Action, Snaptime, Unit
-from python_snaptime.parsers import is_valid, parse, parse_snaptime_string, to_string
+from python_snaptime.parsers import NOW, is_valid, parse, parse_snaptime_string, to_string
 
 
 class TestParse:
@@ -56,14 +57,46 @@ class TestParse:
         assert python_snaptime.parse is parse
         assert "parse" in python_snaptime.__all__
 
+    @pytest.mark.parametrize("snaptime", ["now", NOW])
+    def test_parse_now(self, snaptime: str):
+        # act
+        results = parse(snaptime)
+
+        # assert
+        assert results == []
+
+    @pytest.mark.parametrize("snaptime", ["now-1d", "-1dnow", "@dnow", "nowx", "now()", "NOW", "Now", "now now"])
+    def test_parse_now_not_whole_string(self, snaptime: str):
+        # act/assert
+        with pytest.raises(
+            SnaptimeError,
+            match=re.escape("Snaptime string is invalid: `now` must be the whole snaptime string, in lower case."),
+        ):
+            parse(snaptime)
+
+
+class TestNow:
+    def test_now_value(self):
+        # assert
+        assert NOW == "now"
+
+    def test_now_exported_from_package(self):
+        # assert
+        assert python_snaptime.NOW is NOW
+        assert "NOW" in python_snaptime.__all__
+
 
 class TestIsValid:
-    @pytest.mark.parametrize("snaptime", ["@d", "@d-2h", "@d-2h+10m", "-6hours", "@15m", "+0h", "-1d@d+1y@y-2sec@s"])
+    @pytest.mark.parametrize(
+        "snaptime", ["@d", "@d-2h", "@d-2h+10m", "-6hours", "@15m", "+0h", "-1d@d+1y@y-2sec@s", "now", NOW]
+    )
     def test_is_valid_true(self, snaptime: str):
         # act/assert
         assert is_valid(snaptime) is True
 
-    @pytest.mark.parametrize("snaptime", ["", "@d -2h", "@d!", "@d,-2h", "@d-1.5h", "@d\n"])
+    @pytest.mark.parametrize(
+        "snaptime", ["", "@d -2h", "@d!", "@d,-2h", "@d-1.5h", "@d\n", "now-1d", "@dnow", "NOW", "now()"]
+    )
     def test_is_valid_false(self, snaptime: str):
         # act/assert
         assert is_valid(snaptime) is False
@@ -149,7 +182,8 @@ class TestToString:
         result = to_string([])
 
         # assert
-        assert result == ""
+        assert result == "now"
+        assert result == NOW
 
     @pytest.mark.parametrize(
         "snaptime,result",
@@ -162,6 +196,7 @@ class TestToString:
             ("@15m", "@15m"),
             ("@d-2h@15minutes", "@d-2h@15m"),
             ("@30sec+1h@2hours", "@30s+1h@2h"),
+            ("now", "now"),
         ],
     )
     def test_to_string_round_trip(self, snaptime: str, result: str):
