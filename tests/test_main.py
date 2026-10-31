@@ -8,6 +8,7 @@ import pendulum
 import pytest
 import python_snaptime
 from python_snaptime import (
+    NOW,
     Action,
     CompiledSnaptime,
     Snaptime,
@@ -582,6 +583,32 @@ class TestSnap:
         # assert
         assert type(result) is expected_type
 
+    @pytest.mark.parametrize("snaptime", ["now", NOW])
+    @pytest.mark.parametrize(
+        "dtm,expected_type",
+        [
+            (pendulum.datetime(2024, 12, 30, 18, 52, 30, 123456), pendulum.DateTime),
+            (pendulum.datetime(2024, 12, 30, 18, 52, 30, 123456, tz="America/New_York"), pendulum.DateTime),
+            (datetime(2024, 12, 30, 18, 52, 30, 123456), datetime),
+            (datetime(2024, 12, 30, 18, 52, 30, 123456, tzinfo=ZoneInfo("America/New_York")), datetime),
+        ],
+        ids=["pendulum", "pendulum_timezone", "datetime_naive", "datetime_aware"],
+    )
+    def test_snap_now_keyword(self, dtm: datetime, expected_type: type[datetime], snaptime: str):
+        # act
+        result = snap(dtm, snaptime)
+
+        # assert
+        assert result == dtm
+        assert type(result) is expected_type
+        assert result.tzinfo is dtm.tzinfo
+
+    @pytest.mark.parametrize("snaptime", ["now-1d", "@dnow", "NOW", "now()"])
+    def test_snap_now_keyword_invalid(self, snaptime: str):
+        # act/assert
+        with pytest.raises(SnaptimeError, match="Snaptime string is invalid"):
+            snap(pendulum.datetime(2024, 12, 30, 18, 52), snaptime)
+
 
 class TestSnapMultiple:
     @pytest.fixture()
@@ -959,6 +986,72 @@ class TestSnapRange:
         assert result == (pendulum.datetime(2024, 12, 23), pendulum.datetime(2024, 12, 30))
         assert all(type(result_dtm) is pendulum.DateTime for result_dtm in result)
 
+    @pytest.mark.parametrize("end", ["now", NOW])
+    def test_snap_range_now_end_pendulum(self, end: str):
+        # arrange
+        dtm = pendulum.datetime(2024, 12, 30, 18, 52)
+
+        # act
+        result = snap_range(dtm, "-24h", end)
+
+        # assert
+        assert result == (pendulum.datetime(2024, 12, 29, 18, 52), pendulum.datetime(2024, 12, 30, 18, 52))
+        assert all(type(result_dtm) is pendulum.DateTime for result_dtm in result)
+
+    @pytest.mark.parametrize(
+        "dtm,expected_type",
+        [
+            (pendulum.datetime(2024, 12, 30, 18, 52, 30, 123456), pendulum.DateTime),
+            (pendulum.datetime(2024, 12, 30, 18, 52, 30, 123456, tz="America/New_York"), pendulum.DateTime),
+            (datetime(2024, 12, 30, 18, 52, 30, 123456), datetime),
+            (datetime(2024, 12, 30, 18, 52, 30, 123456, tzinfo=ZoneInfo("America/New_York")), datetime),
+        ],
+        ids=["pendulum", "pendulum_timezone", "datetime_naive", "datetime_aware"],
+    )
+    @pytest.mark.parametrize(
+        "start,end,inclusive,start_delta,end_delta",
+        [
+            ("-24h", "now", False, timedelta(hours=-24), timedelta(0)),
+            ("-24h", NOW, True, timedelta(hours=-24), timedelta(microseconds=-1)),
+            ("now", "+1h", False, timedelta(0), timedelta(hours=1)),
+            (NOW, "+1h", True, timedelta(0), timedelta(hours=1, microseconds=-1)),
+            ("now", "now", False, timedelta(0), timedelta(0)),
+        ],
+    )
+    def test_snap_range_now(
+        self,
+        dtm: datetime,
+        expected_type: type[datetime],
+        start: str,
+        end: str,
+        inclusive: bool,
+        start_delta: timedelta,
+        end_delta: timedelta,
+    ):
+        # act
+        result = snap_range(dtm, start, end, inclusive=inclusive)
+
+        # assert
+        assert result == (dtm + start_delta, dtm + end_delta)
+        for result_dtm in result:
+            assert type(result_dtm) is expected_type
+            assert result_dtm.tzinfo is dtm.tzinfo
+
+    @pytest.mark.parametrize("dtm", [pendulum.datetime(2024, 12, 30, 18), datetime(2024, 12, 30, 18)])
+    def test_snap_range_now_empty_inclusive(self, dtm: datetime):
+        # act/assert
+        with pytest.raises(
+            SnaptimeError,
+            match=re.escape("The range from 'now' to 'now' is empty. An inclusive range must not be empty."),
+        ):
+            snap_range(dtm, "now", "now", inclusive=True)
+
+    @pytest.mark.parametrize("dtm", [pendulum.datetime(2024, 12, 30, 18), datetime(2024, 12, 30, 18)])
+    def test_snap_range_now_reversed(self, dtm: datetime):
+        # act/assert
+        with pytest.raises(SnaptimeError, match=re.escape("The start of the range ('now') is after the end ('-1h').")):
+            snap_range(dtm, "now", "-1h")
+
 
 class TestSnapNow:
     @pytest.fixture(autouse=True)
@@ -1070,6 +1163,29 @@ class TestSnapNow:
         assert type(result) is datetime
         assert result == datetime(2024, 12, 30, tzinfo=ZoneInfo("Asia/Tokyo"))
 
+    @pytest.mark.parametrize("snaptime", ["now", NOW])
+    def test_snap_now_now_keyword_pendulum(self, snaptime: str):
+        # act
+        result = snap_now(snaptime, tz="Europe/London")
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result == pendulum.datetime(2024, 12, 30, 18, 52, 30, 123456, tz="UTC")
+        assert result.timezone_name == "Europe/London"
+
+    @pytest.mark.parametrize("snaptime", ["now", NOW])
+    def test_snap_now_now_keyword_datetime(self, snaptime: str):
+        # arrange
+        tz = ZoneInfo("Asia/Tokyo")
+
+        # act
+        result = snap_now(snaptime, tz=tz)
+
+        # assert
+        assert type(result) is datetime
+        assert result == datetime(2024, 12, 31, 3, 52, 30, 123456, tzinfo=tz)
+        assert result.tzinfo is tz
+
 
 class TestCompile:
     @pytest.mark.parametrize(
@@ -1137,17 +1253,40 @@ class TestCompile:
             ("@d-2h", "@d-2h"),
             ("@days-2hours+10minutes", "@d-2h+10m"),
             ("@15m", "@15m"),
+            ("now", "now"),
+            (NOW, "now"),
         ],
     )
     def test_compile_str(self, snaptime: str, result: str):
         # act/assert
         assert str(compile(snaptime)) == result
 
-    @pytest.mark.parametrize("snaptime", ["@ms", "@d-h", "", "@d 2h"])
+    @pytest.mark.parametrize("snaptime", ["@ms", "@d-h", "", "@d 2h", "now-1d", "NOW", "now()"])
     def test_compile_invalid(self, snaptime: str):
         # act/assert
         with pytest.raises(SnaptimeError, match="Snaptime string is invalid"):
             compile(snaptime)
+
+    @pytest.mark.parametrize(
+        "dtm,expected_type",
+        [
+            (pendulum.datetime(2024, 12, 30, 18, 52, 30, 123456), pendulum.DateTime),
+            (pendulum.datetime(2024, 12, 30, 18, 52, 30, 123456, tz="America/New_York"), pendulum.DateTime),
+            (datetime(2024, 12, 30, 18, 52, 30, 123456), datetime),
+            (datetime(2024, 12, 30, 18, 52, 30, 123456, tzinfo=ZoneInfo("America/New_York")), datetime),
+        ],
+        ids=["pendulum", "pendulum_timezone", "datetime_naive", "datetime_aware"],
+    )
+    def test_compile_now(self, dtm: datetime, expected_type: type[datetime]):
+        # act
+        compiled = compile("now")
+        result = compiled.apply(dtm)
+
+        # assert
+        assert compiled.snaptimes == ()
+        assert result == dtm
+        assert type(result) is expected_type
+        assert result.tzinfo is dtm.tzinfo
 
     def test_compile_equal_and_hashable(self):
         # act
@@ -1269,7 +1408,7 @@ class TestCompile:
         # assert
         assert result == dtm
         assert type(result) is pendulum.DateTime
-        assert str(CompiledSnaptime(())) == ""
+        assert str(CompiledSnaptime(())) == "now"
 
     def test_compile_apply_invalid_datetime(self):
         # arrange
@@ -1484,6 +1623,35 @@ class TestDate:
         # act/assert
         with pytest.raises(SnaptimeError, match=re.escape("Cannot apply '-12h' to a date")):
             snap_range(date_type(2024, 12, 30), "-1d", "@d-12h")
+
+
+@pytest.mark.parametrize("snaptime", ["now", NOW])
+@pytest.mark.parametrize(
+    "dtm,expected_type",
+    [(date(2024, 12, 30), date), (pendulum.date(2024, 12, 30), pendulum.Date)],
+    ids=["date", "pendulum_date"],
+)
+def test_snap_now_keyword_date(dtm: date, expected_type: type[date], snaptime: str):
+    # act
+    result = snap(dtm, snaptime)
+
+    # assert
+    assert result == date(2024, 12, 30)
+    assert type(result) is expected_type
+
+
+@pytest.mark.parametrize(
+    "dtm,expected_type",
+    [(date(2024, 12, 30), date), (pendulum.date(2024, 12, 30), pendulum.Date)],
+    ids=["date", "pendulum_date"],
+)
+def test_snap_range_now_keyword_date(dtm: date, expected_type: type[date]):
+    # act
+    result = snap_range(dtm, "-1d", "now")
+
+    # assert
+    assert result == (date(2024, 12, 29), date(2024, 12, 30))
+    assert all(type(result_date) is expected_type for result_date in result)
 
 
 @pytest.mark.parametrize(

@@ -42,6 +42,14 @@ For example, `@d-2h` will give you two hours ago from the start of the day.
 
 A snaptime string can contain only `@`, `+`, `-`, digits and the unit strings in the table. Any other character, including a space, raises a `SnaptimeError`.
 
+The snaptime string `now` leaves the datetime unchanged, as `latest=now` does in Splunk. For example, `snap_range(dtm, "-24h", "now")` gives the last 24 hours. `now` must be the whole string, in lower case. `now-1d` and `@dnow` raise a `SnaptimeError`. To get 1 day before now, use `-1d`. The package also exports the constant `NOW`, which is the string `"now"`:
+
+```python
+from python_snaptime import NOW, snap_range
+
+snap_range(dtm, "-24h", NOW)  # the same as snap_range(dtm, "-24h", "now")
+```
+
 > [!NOTE]
 > By default, `@w` snaps to the start of the week on Monday. In Splunk, `@w` snaps to Sunday. To use a different first day of the week, set `week_start`, for example `snap(dtm, "@w", week_start=Weekday.SUNDAY)`.
 
@@ -140,7 +148,7 @@ from datetime import date
 
 import pendulum
 from python_snaptime import (
-    SnaptimeError, Weekday, apply, compile, is_valid, parse, snap, snap_now, snap_range, to_string,
+    NOW, SnaptimeError, Weekday, apply, compile, is_valid, parse, snap, snap_now, snap_range, to_string,
 )
 
 now = pendulum.datetime(2024, 12, 30, 18, 52)  # Monday
@@ -154,6 +162,8 @@ snap_now("@h", tz="Europe/London")          # start of the current hour in Londo
 
 snap_range(now, "-1d@d", "@d")                  # (2024-12-29 00:00, 2024-12-30 00:00)
 snap_range(now, "-1d@d", "@d", inclusive=True)  # (2024-12-29 00:00, 2024-12-29 23:59:59.999999)
+snap_range(now, "-24h", "now")                  # (2024-12-29 18:52, 2024-12-30 18:52)
+snap_range(now, "-24h", NOW)                    # the same, with the NOW constant
 
 ops = parse("@d-2h")    # parse once
 apply(now, ops)         # 2024-12-29 22:00, apply many times
