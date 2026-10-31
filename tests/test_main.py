@@ -42,11 +42,14 @@ class TestSnap:
 
     def test_snap_invalid_datetime(self):
         # arrage
-        dtm = date(2024, 12, 30)
+        dtm = "2024-12-30"
 
         # arrange/act
         with pytest.raises(
-            TypeError, match=re.escape("Invalid datetime type. Must be pendulum.DateTime or datetime.datetime.")
+            TypeError,
+            match=re.escape(
+                "Invalid datetime type. Must be pendulum.DateTime, datetime.datetime, pendulum.Date or datetime.date."
+            ),
         ):
             snap(dtm, "@d-2h")
 
@@ -785,11 +788,14 @@ class TestApply:
 
     def test_apply_invalid_datetime(self):
         # arrange
-        dtm = date(2024, 12, 30)
+        dtm = "2024-12-30"
 
         # act/assert
         with pytest.raises(
-            TypeError, match=re.escape("Invalid datetime type. Must be pendulum.DateTime or datetime.datetime.")
+            TypeError,
+            match=re.escape(
+                "Invalid datetime type. Must be pendulum.DateTime, datetime.datetime, pendulum.Date or datetime.date."
+            ),
         ):
             apply(dtm, parse("@d"))
 
@@ -916,7 +922,7 @@ class TestSnapRange:
     def test_snap_range_invalid_datetime(self):
         # act/assert
         with pytest.raises(TypeError, match=re.escape("Invalid datetime type.")):
-            snap_range(date(2024, 12, 30), "-1d@d", "@d")
+            snap_range("2024-12-30", "-1d@d", "@d")
 
     @pytest.mark.parametrize(
         "dtm",
@@ -1267,11 +1273,14 @@ class TestCompile:
 
     def test_compile_apply_invalid_datetime(self):
         # arrange
-        dtm = date(2024, 12, 30)
+        dtm = "2024-12-30"
 
         # act/assert
         with pytest.raises(
-            TypeError, match=re.escape("Invalid datetime type. Must be pendulum.DateTime or datetime.datetime.")
+            TypeError,
+            match=re.escape(
+                "Invalid datetime type. Must be pendulum.DateTime, datetime.datetime, pendulum.Date or datetime.date."
+            ),
         ):
             compile("@d").apply(dtm)
 
@@ -1281,3 +1290,220 @@ class TestCompile:
         assert python_snaptime.CompiledSnaptime is CompiledSnaptime
         assert "compile" in python_snaptime.__all__
         assert "CompiledSnaptime" in python_snaptime.__all__
+
+
+DATE_TYPES = pytest.mark.parametrize("date_type", [date, pendulum.Date], ids=["date", "pendulum_date"])
+
+
+@DATE_TYPES
+class TestDate:
+    @pytest.mark.parametrize(
+        "snaptime,snap_date",
+        [
+            ("@d", (2024, 12, 30)),
+            ("-1d", (2024, 12, 29)),
+            ("+2days", (2025, 1, 1)),
+            ("+0d", (2024, 12, 30)),
+            ("@w", (2024, 12, 30)),
+            ("-1w", (2024, 12, 23)),
+            ("+1week", (2025, 1, 6)),
+            ("@mon", (2024, 12, 1)),
+            ("-1mon", (2024, 11, 30)),
+            ("+2months", (2025, 2, 28)),
+            ("@q", (2024, 10, 1)),
+            ("-1q", (2024, 9, 30)),
+            ("+1quarter", (2025, 3, 30)),
+            ("@y", (2024, 1, 1)),
+            ("-1y", (2023, 12, 30)),
+            ("+1year", (2025, 12, 30)),
+            ("-1mon@mon", (2024, 11, 1)),
+            ("@w-2d@d", (2024, 12, 28)),
+            ("@q+2mon@mon-1w@w", (2024, 11, 18)),
+            ("@y-1d@w+3d", (2023, 12, 28)),
+        ],
+    )
+    def test_snap_date(self, date_type: type[date], snaptime: str, snap_date: tuple[int, int, int]):
+        # arrange
+        dtm = date_type(2024, 12, 30)
+
+        # act
+        result = snap(dtm, snaptime)
+
+        # assert
+        assert result == date(*snap_date)
+        assert type(result) is date_type
+
+    def test_snap_date_leap_day(self, date_type: type[date]):
+        # act
+        result = snap(date_type(2024, 2, 29), "+1y")
+
+        # assert
+        assert result == date(2025, 2, 28)
+        assert type(result) is date_type
+
+    @pytest.mark.parametrize(
+        "week_start,snap_date",
+        [
+            (Weekday.MONDAY, (2024, 12, 30)),
+            (Weekday.WEDNESDAY, (2024, 12, 25)),
+            (Weekday.SUNDAY, (2024, 12, 29)),
+        ],
+    )
+    def test_snap_date_week_start(self, date_type: type[date], week_start: Weekday, snap_date: tuple[int, int, int]):
+        # act
+        result = snap(date_type(2024, 12, 31), "@w", week_start=week_start)
+
+        # assert
+        assert result == date(*snap_date)
+        assert type(result) is date_type
+
+    @pytest.mark.parametrize(
+        "snaptime,rejected,unit",
+        [
+            ("@s", "@s", "s"),
+            ("@m", "@m", "m"),
+            ("@h", "@h", "h"),
+            ("@15m", "@15m", "m"),
+            ("+1us", "+1us", "us"),
+            ("-1ms", "-1ms", "ms"),
+            ("+30secs", "+30s", "s"),
+            ("-1m", "-1m", "m"),
+            ("-24hours", "-24h", "h"),
+            ("@d-2h", "-2h", "h"),
+            ("-1mon@mon+0h", "+0h", "h"),
+        ],
+    )
+    def test_snap_date_rejects_unit_smaller_than_day(
+        self, date_type: type[date], snaptime: str, rejected: str, unit: str
+    ):
+        # arrange
+        msg = f"Cannot apply {rejected!r} to a date: the unit {unit!r} is smaller than a day."
+
+        # act/assert
+        with pytest.raises(SnaptimeError, match=re.escape(msg)):
+            snap(date_type(2024, 12, 30), snaptime)
+
+    def test_apply_date(self, date_type: type[date]):
+        # arrange
+        operations = [
+            Snaptime(action=Action.SUB, unit=Unit.MONTH, time_int=1),
+            Snaptime(action=Action.SNAP, unit=Unit.MONTH),
+        ]
+
+        # act
+        result = apply(date_type(2024, 12, 30), operations)
+
+        # assert
+        assert result == date(2024, 11, 1)
+        assert type(result) is date_type
+
+    def test_apply_date_no_snaptimes(self, date_type: type[date]):
+        # act
+        result = apply(date_type(2024, 12, 30), [])
+
+        # assert
+        assert result == date(2024, 12, 30)
+        assert type(result) is date_type
+
+    def test_apply_date_rejects_unit_smaller_than_day(self, date_type: type[date]):
+        # arrange
+        operations = [
+            Snaptime(action=Action.SNAP, unit=Unit.DAY),
+            Snaptime(action=Action.ADD, unit=Unit.HOUR, time_int=6),
+        ]
+
+        # act/assert
+        with pytest.raises(SnaptimeError, match=re.escape("Cannot apply '+6h' to a date")):
+            apply(date_type(2024, 12, 30), operations)
+
+    @pytest.mark.parametrize("week_start,day", [(None, 23), (Weekday.SUNDAY, 22)])
+    def test_compile_apply_date(self, date_type: type[date], week_start: Weekday | None, day: int):
+        # arrange
+        compiled = compile("-1w@w", week_start=Weekday.MONDAY)
+
+        # act
+        result = compiled.apply(date_type(2024, 12, 30), week_start=week_start)
+
+        # assert
+        assert result == date(2024, 12, day)
+        assert type(result) is date_type
+
+    def test_compile_apply_date_rejects_unit_smaller_than_day(self, date_type: type[date]):
+        # act/assert
+        with pytest.raises(SnaptimeError, match=re.escape("Cannot apply '@h' to a date")):
+            compile("@d@h").apply(date_type(2024, 12, 30))
+
+    @pytest.mark.parametrize(
+        "start,end,inclusive,range_dates",
+        [
+            ("-1w@w", "@w", False, ((2024, 12, 23), (2024, 12, 30))),
+            ("-1w@w", "@w", True, ((2024, 12, 23), (2024, 12, 29))),
+            ("-1d", "@d", False, ((2024, 12, 29), (2024, 12, 30))),
+            ("-1d", "@d", True, ((2024, 12, 29), (2024, 12, 29))),
+            ("@mon", "+1mon@mon", True, ((2024, 12, 1), (2024, 12, 31))),
+            ("@y", "+1y@y", True, ((2024, 1, 1), (2024, 12, 31))),
+            ("@d", "@d", False, ((2024, 12, 30), (2024, 12, 30))),
+        ],
+    )
+    def test_snap_range_date(
+        self,
+        date_type: type[date],
+        start: str,
+        end: str,
+        inclusive: bool,
+        range_dates: tuple[tuple[int, int, int], tuple[int, int, int]],
+    ):
+        # act
+        result = snap_range(date_type(2024, 12, 30), start, end, inclusive=inclusive)
+
+        # assert
+        assert result == (date(*range_dates[0]), date(*range_dates[1]))
+        assert type(result) is tuple
+        assert all(type(result_date) is date_type for result_date in result)
+
+    def test_snap_range_date_week_start(self, date_type: type[date]):
+        # act
+        result = snap_range(date_type(2024, 12, 31), "@w-1w", "@w", inclusive=True, week_start=Weekday.SUNDAY)
+
+        # assert
+        assert result == (date(2024, 12, 22), date(2024, 12, 28))
+        assert all(type(result_date) is date_type for result_date in result)
+
+    def test_snap_range_date_empty_inclusive(self, date_type: type[date]):
+        # act/assert
+        with pytest.raises(SnaptimeError, match=re.escape("The range from '@d' to '@d' is empty.")):
+            snap_range(date_type(2024, 12, 30), "@d", "@d", inclusive=True)
+
+    @pytest.mark.parametrize("inclusive", [False, True])
+    def test_snap_range_date_reversed(self, date_type: type[date], inclusive: bool):
+        # act/assert
+        with pytest.raises(SnaptimeError, match=re.escape("The start of the range ('@d') is after the end ('-1d').")):
+            snap_range(date_type(2024, 12, 30), "@d", "-1d", inclusive=inclusive)
+
+    def test_snap_range_date_rejects_unit_smaller_than_day(self, date_type: type[date]):
+        # act/assert
+        with pytest.raises(SnaptimeError, match=re.escape("Cannot apply '-12h' to a date")):
+            snap_range(date_type(2024, 12, 30), "-1d", "@d-12h")
+
+
+@pytest.mark.parametrize(
+    "dtm,snaptime,snap_dtm",
+    [
+        (pendulum.datetime(2024, 12, 30, 18, 52), "@w+6h", pendulum.datetime(2024, 12, 30, 6)),
+        (datetime(2024, 12, 30, 18, 52), "@w+6h", datetime(2024, 12, 30, 6)),
+        (
+            datetime(2024, 12, 30, 18, 52, tzinfo=ZoneInfo("Europe/London")),
+            "@h",
+            datetime(2024, 12, 30, 18, tzinfo=ZoneInfo("Europe/London")),
+        ),
+    ],
+    ids=["pendulum", "datetime_naive", "datetime_aware"],
+)
+def test_datetime_is_not_a_date(dtm: datetime, snaptime: str, snap_dtm: datetime):
+    # act
+    result = snap(dtm, snaptime)
+
+    # assert
+    assert result == snap_dtm
+    assert type(result) is type(dtm)
+    assert result.tzinfo is dtm.tzinfo
