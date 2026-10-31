@@ -13,7 +13,7 @@
       "sourceUrl": "ssh://git@plex-hetzner-1.tail9e2bf.ts.net:2222/dtomlinson/llm-skills.git",
       "sourceType": "git",
       "skillPath": "skills/initialise-changelog/SKILL.md",
-      "computedHash": "2f4c27ed046fdc663f1754e53f27a277240aedb9c93529998263ee02533919a8"
+      "computedHash": "3e815ec7267e57b324d55d7942592cfe5e48400f5ac1c751f4cc1e7748bca627"
     }
   }
 }

@@ -25,7 +25,7 @@ The pipeline assumes that the squash commit of each PR is a conventional commit.
 
 | File | Purpose |
 |---|---|
-| [templates/cliff.toml](templates/cliff.toml) | git-cliff config: groups, revert handling, stable-only `tag_pattern`, the release-notes block |
+| [templates/cliff.toml](templates/cliff.toml) | git-cliff config: groups, revert handling, removal of the GitHub PR number, stable-only `tag_pattern`, the release-notes block |
 | [templates/changelog.yaml](templates/changelog.yaml) | The workflow. Copy it to `.github/workflows/changelog.yaml` |
 | [scripts/detect.sh](scripts/detect.sh) | Read-only detection. Prints JSON |
 

@@ -77,6 +77,8 @@ commit_preprocessors = [
     # git and the GitHub revert button write `Revert "feat: X"`, which is not conventional
     { pattern = '^Revert "', replace = 'revert: Revert "' },
     { pattern = '\n+This reverts commit [0-9a-f]+\.', replace = "" },
+    # GitHub adds the PR number to the squash title
+    { pattern = '(?m) \(#[0-9]+\)$', replace = "" },
 ]
 
 # first match wins. `skip = true` keeps a type out of the changelog
