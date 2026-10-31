@@ -1625,6 +1625,35 @@ class TestDate:
             snap_range(date_type(2024, 12, 30), "-1d", "@d-12h")
 
 
+@pytest.mark.parametrize("snaptime", ["now", NOW])
+@pytest.mark.parametrize(
+    "dtm,expected_type",
+    [(date(2024, 12, 30), date), (pendulum.date(2024, 12, 30), pendulum.Date)],
+    ids=["date", "pendulum_date"],
+)
+def test_snap_now_keyword_date(dtm: date, expected_type: type[date], snaptime: str):
+    # act
+    result = snap(dtm, snaptime)
+
+    # assert
+    assert result == date(2024, 12, 30)
+    assert type(result) is expected_type
+
+
+@pytest.mark.parametrize(
+    "dtm,expected_type",
+    [(date(2024, 12, 30), date), (pendulum.date(2024, 12, 30), pendulum.Date)],
+    ids=["date", "pendulum_date"],
+)
+def test_snap_range_now_keyword_date(dtm: date, expected_type: type[date]):
+    # act
+    result = snap_range(dtm, "-1d", "now")
+
+    # assert
+    assert result == (date(2024, 12, 29), date(2024, 12, 30))
+    assert all(type(result_date) is expected_type for result_date in result)
+
+
 @pytest.mark.parametrize(
     "dtm,snaptime,snap_dtm",
     [
