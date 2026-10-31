@@ -1612,6 +1612,44 @@ class TestDate:
         assert type(result) is date_type
 
     @pytest.mark.parametrize(
+        "snaptime,day",
+        [
+            ("@w0", 29),
+            ("@w1", 30),
+            ("@w2", 24),
+            ("@w3", 25),
+            ("@w4", 26),
+            ("@w5", 27),
+            ("@w6", 28),
+            ("@w7", 29),
+        ],
+    )
+    def test_snap_date_weekday(self, date_type: type[date], snaptime: str, day: int):
+        # act
+        result = snap(date_type(2024, 12, 30), snaptime)
+
+        # assert
+        assert result == date(2024, 12, day)
+        assert type(result) is date_type
+
+    @pytest.mark.parametrize("week_start", list(Weekday))
+    def test_snap_date_weekday_ignores_week_start(self, date_type: type[date], week_start: Weekday):
+        # act
+        result = snap(date_type(2024, 12, 30), "@w5", week_start=week_start)
+
+        # assert
+        assert result == date(2024, 12, 27)
+        assert type(result) is date_type
+
+    def test_snap_date_weekday_chain(self, date_type: type[date]):
+        # act
+        result = snap(date_type(2024, 12, 30), "-7d@w1+2d")
+
+        # assert
+        assert result == date(2024, 12, 25)
+        assert type(result) is date_type
+
+    @pytest.mark.parametrize(
         "snaptime,rejected,unit",
         [
             ("@s", "@s", "s"),
