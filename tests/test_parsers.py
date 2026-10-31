@@ -6,7 +6,7 @@ import python_snaptime
 from pytest_mock import MockerFixture
 from python_snaptime import parsers
 from python_snaptime.exceptions import SnaptimeError
-from python_snaptime.models import Action, Snaptime, Unit
+from python_snaptime.models import Action, Snaptime, Unit, Weekday
 from python_snaptime.parsers import NOW, is_valid, parse, parse_snaptime_string, to_string
 
 
@@ -32,6 +32,45 @@ class TestParse:
 
         # assert
         assert results == [Snaptime(action=Action.SNAP, unit=Unit.MINUTE, time_int=15)]
+
+    @pytest.mark.parametrize(
+        "snaptime,weekday",
+        [
+            ("@w0", Weekday.SUNDAY),
+            ("@w1", Weekday.MONDAY),
+            ("@w2", Weekday.TUESDAY),
+            ("@w3", Weekday.WEDNESDAY),
+            ("@w4", Weekday.THURSDAY),
+            ("@w5", Weekday.FRIDAY),
+            ("@w6", Weekday.SATURDAY),
+            ("@w7", Weekday.SUNDAY),
+        ],
+    )
+    def test_parse_weekday(self, snaptime: str, weekday: Weekday):
+        # act
+        results = parse(snaptime)
+
+        # assert
+        assert results == [Snaptime(action=Action.SNAP, unit=Unit.WEEK, weekday=weekday)]
+
+    def test_parse_weekday_chain(self):
+        # act
+        results = parse("-7d@w1+2h")
+
+        # assert
+        assert results == [
+            Snaptime(action=Action.SUB, unit=Unit.DAY, time_int=7),
+            Snaptime(action=Action.SNAP, unit=Unit.WEEK, weekday=Weekday.MONDAY),
+            Snaptime(action=Action.ADD, unit=Unit.HOUR, time_int=2),
+        ]
+
+    @pytest.mark.parametrize("snaptime", ["@w", "@week", "@weeks"])
+    def test_parse_week_without_weekday(self, snaptime: str):
+        # act
+        results = parse(snaptime)
+
+        # assert
+        assert results == [Snaptime(action=Action.SNAP, unit=Unit.WEEK)]
 
     def test_parse_invalid(self, mocker):
         # arrange
@@ -88,14 +127,16 @@ class TestNow:
 
 class TestIsValid:
     @pytest.mark.parametrize(
-        "snaptime", ["@d", "@d-2h", "@d-2h+10m", "-6hours", "@15m", "+0h", "-1d@d+1y@y-2sec@s", "now", NOW]
+        "snaptime",
+        ["@d", "@d-2h", "@d-2h+10m", "-6hours", "@15m", "+0h", "-1d@d+1y@y-2sec@s", "now", NOW, "@w0", "@w7", "-7d@w1"],
     )
     def test_is_valid_true(self, snaptime: str):
         # act/assert
         assert is_valid(snaptime) is True
 
     @pytest.mark.parametrize(
-        "snaptime", ["", "@d -2h", "@d!", "@d,-2h", "@d-1.5h", "@d\n", "now-1d", "@dnow", "NOW", "now()"]
+        "snaptime",
+        ["", "@d -2h", "@d!", "@d,-2h", "@d-1.5h", "@d\n", "now-1d", "@dnow", "NOW", "now()", "@w8", "+w5"],
     )
     def test_is_valid_false(self, snaptime: str):
         # act/assert
@@ -197,6 +238,11 @@ class TestToString:
             ("@d-2h@15minutes", "@d-2h@15m"),
             ("@30sec+1h@2hours", "@30s+1h@2h"),
             ("now", "now"),
+            ("@w5", "@w5"),
+            ("@w0", "@w0"),
+            ("@w7", "@w0"),
+            ("-7d@w1+2h", "-7d@w1+2h"),
+            ("@weeks@w6", "@w@w6"),
         ],
     )
     def test_to_string_round_trip(self, snaptime: str, result: str):

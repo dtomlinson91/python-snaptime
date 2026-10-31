@@ -567,6 +567,121 @@ class TestSnap:
         assert result.timezone_name == "America/New_York"
 
     @pytest.mark.parametrize(
+        "snaptime,day",
+        [
+            ("@w0", 29),
+            ("@w1", 30),
+            ("@w2", 24),
+            ("@w3", 25),
+            ("@w4", 26),
+            ("@w5", 27),
+            ("@w6", 28),
+            ("@w7", 29),
+        ],
+    )
+    def test_snap_weekday(self, snaptime: str, day: int):
+        # arrange
+        dtm = pendulum.datetime(2024, 12, 30, 18, 52)
+
+        # act
+        result = snap(dtm, snaptime)
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result == pendulum.datetime(2024, 12, day)
+
+    @pytest.mark.parametrize(
+        "snaptime,weekday_name",
+        [
+            ("@w0", "Sunday"),
+            ("@w1", "Monday"),
+            ("@w2", "Tuesday"),
+            ("@w3", "Wednesday"),
+            ("@w4", "Thursday"),
+            ("@w5", "Friday"),
+            ("@w6", "Saturday"),
+            ("@w7", "Sunday"),
+        ],
+    )
+    def test_snap_weekday_datetime(self, datetime_dtm: datetime, snaptime: str, weekday_name: str):
+        # act
+        result = snap(datetime_dtm, snaptime)
+
+        # assert
+        assert type(result) is datetime
+        assert result.strftime("%A") == weekday_name
+        assert result.time() == datetime.min.time()
+        assert timedelta(0) <= datetime_dtm - result < timedelta(days=7)
+
+    @pytest.mark.parametrize(
+        "dtm",
+        [
+            pendulum.datetime(2024, 12, 27, 0, 0, 0),
+            pendulum.datetime(2024, 12, 27, 13, 1, 10, 999999),
+            pendulum.datetime(2024, 12, 27, 23, 59, 59, 999999),
+        ],
+    )
+    def test_snap_weekday_same_day(self, dtm: pendulum.DateTime):
+        # act
+        result = snap(dtm, "@w5")
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result == pendulum.datetime(2024, 12, 27)
+
+    def test_snap_weekday_day_after(self):
+        # act
+        result = snap(pendulum.datetime(2024, 12, 27, 23, 59), "@w6")
+
+        # assert
+        assert result == pendulum.datetime(2024, 12, 21)
+
+    @pytest.mark.parametrize(
+        "snaptime,snap_dtm",
+        [
+            ("-7d@w1", datetime(2024, 12, 23)),
+            ("@w1-7d", datetime(2024, 12, 23)),
+            ("@w5+1d@w1", datetime(2024, 12, 23)),
+            ("@w0+12h", datetime(2024, 12, 29, 12)),
+            ("@mon@w3", datetime(2024, 11, 27)),
+        ],
+    )
+    def test_snap_weekday_chain(self, datetime_dtm: datetime, snaptime: str, snap_dtm: datetime):
+        # act
+        result = snap(datetime_dtm, snaptime)
+
+        # assert
+        assert type(result) is datetime
+        assert result == snap_dtm
+
+    @pytest.mark.parametrize("week_start", list(Weekday))
+    def test_snap_weekday_ignores_week_start(self, pendulum_dtm: pendulum.DateTime, week_start: Weekday):
+        # act
+        result = snap(pendulum_dtm, "@w5", week_start=week_start)
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result == pendulum.datetime(2024, 12, 27)
+
+    def test_snap_weekday_pendulum_timezone(self, pendulum_dtm_timezone: pendulum.DateTime):
+        # act
+        result = snap(pendulum_dtm_timezone, "@w0")
+
+        # assert
+        assert type(result) is pendulum.DateTime
+        assert result == pendulum.datetime(2024, 12, 29, tz=pendulum.timezone("America/New_York"))
+        assert result.timezone_name == "America/New_York"
+
+    def test_snap_weekday_datetime_timezone(self, datetime_dtm_timezone: datetime):
+        # act
+        result = snap(datetime_dtm_timezone, "@w0")
+
+        # assert
+        assert type(result) is datetime
+        assert result == datetime(2024, 12, 29, tzinfo=ZoneInfo("America/New_York"))
+        assert result.tzinfo == ZoneInfo("America/New_York")
+
+    @pytest.mark.parametrize(
         "dtm,expected_type",
         [
             (pendulum.datetime(2024, 12, 30, 13, 1, 10), pendulum.DateTime),
@@ -1384,7 +1499,7 @@ class TestCompile:
         # act/assert
         assert repr(compile("@d")) == (
             "CompiledSnaptime(snaptimes=(Snaptime(action=<Action.SNAP: '@'>, unit=<Unit.DAY: ('d', 'day', 'days')>, "
-            "time_int=None),), week_start=<Weekday.MONDAY: 0>)"
+            "time_int=None, weekday=None),), week_start=<Weekday.MONDAY: 0>)"
         )
 
     def test_compiled_snaptime_converts_list_to_tuple(self):

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Final
 
 from python_snaptime.exceptions import SnaptimeError
 from python_snaptime.handlers import handle_timesnapping
-from python_snaptime.models import Snaptime, Weekday
+from python_snaptime.models import Snaptime, Unit, Weekday
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -16,6 +16,20 @@ if TYPE_CHECKING:
 
 NOW: Final = "now"
 """The snaptime string for the current time, which leaves a datetime unchanged."""
+
+_SPLUNK_WEEKDAYS = frozenset("01234567")
+
+
+def _parse_weekday(unit: str | None) -> Weekday | None:
+    weekday_match = re.fullmatch(r"w(\d+)", unit or "")
+    if weekday_match is None:
+        return None
+    number = weekday_match.group(1)
+    if number not in _SPLUNK_WEEKDAYS:
+        msg = f"Snaptime string is invalid: the day of the week must be `w0` to `w7`, but `{unit}` is not."
+        raise SnaptimeError(msg)
+    # Splunk numbers Sunday as 0 or 7 and Monday as 1
+    return Weekday((int(number) - 1) % 7)
 
 
 def parse(snaptime: str) -> list[Snaptime]:
@@ -51,11 +65,13 @@ def parse(snaptime: str) -> list[Snaptime]:
         if action is None and integer is None and unit is None:
             pass
         else:
+            weekday = _parse_weekday(unit)
             results.append(
                 Snaptime(
                     action=action,
-                    unit=unit,
+                    unit=unit if weekday is None else Unit.WEEK,
                     time_int=int(integer) if integer is not None else None,
+                    weekday=weekday,
                 )
             )
 

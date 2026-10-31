@@ -19,6 +19,12 @@ INVALID_SNAPTIMES = [
     ("-2", "Snaptime string is invalid: missing time unit for time addition or subtraction."),
     ("@@d", "'@@' is not a valid Action"),
     ("@xyz", "'xyz' is not a valid Unit"),
+    ("+w5", "Snaptime string is invalid: a day of the week is allowed only with the snap `@w`."),
+    ("-1w5", "Snaptime string is invalid: a day of the week is allowed only with the snap `@w`."),
+    ("@2w5", "Snaptime string is invalid: cannot snap to a multiple of a day of the week."),
+    ("@w8", "Snaptime string is invalid: the day of the week must be `w0` to `w7`, but `w8` is not."),
+    ("@w05", "Snaptime string is invalid: the day of the week must be `w0` to `w7`, but `w05` is not."),
+    ("@week5", "'week5' is not a valid Unit"),
 ]
 
 

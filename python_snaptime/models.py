@@ -63,11 +63,23 @@ def _verify_snap_multiple(unit: Unit, time_int: int) -> None:
         raise SnaptimeError(msg)
 
 
+def _verify_weekday(action: Action, unit: Unit | None, time_int: int | None) -> None:
+    if action != Action.SNAP or unit != Unit.WEEK:
+        msg = "Snaptime string is invalid: a day of the week is allowed only with the snap `@w`."
+        raise SnaptimeError(msg)
+    if time_int is not None:
+        msg = "Snaptime string is invalid: cannot snap to a multiple of a day of the week."
+        raise SnaptimeError(msg)
+
+
 @dataclass(frozen=True, kw_only=True)
 class Snaptime:
     """Model representing a snaptime configuration.
 
-    The class converts a `str` value of `action` or `unit` to its `Action` or `Unit` member.
+    The class converts a `str` value of `action` or `unit`, and an `int` value of `weekday`, to its
+    enum member.
+    Set `weekday` only with `Action.SNAP` and `Unit.WEEK`. The snap then goes back to that day
+    of the week, and ignores `week_start`.
 
     Raises:
         SnaptimeError: If the configuration is not a valid snaptime operation.
@@ -76,30 +88,41 @@ class Snaptime:
     action: Action | None = None
     unit: Unit | None = None
     time_int: int | None = None
+    weekday: Weekday | None = None
 
     def __str__(self) -> str:
-        """Return the snaptime string of this snaptime, for example `@d`, `@15m` or `-2h`.
+        """Return the snaptime string of this snaptime, for example `@d`, `@15m`, `@w5` or `-2h`.
 
         Returns:
-            str: The snaptime string, with the shortest string of the unit.
+            str: The snaptime string, with the shortest string of the unit. A `weekday` gives
+                the Splunk day number, so Sunday is `@w0`.
         """
         action = self.action.value if self.action is not None else ""
         time_int = str(self.time_int) if self.time_int is not None else ""
         unit = self.unit.value[0] if self.unit is not None else ""
-        return f"{action}{time_int}{unit}"
+        weekday = str((self.weekday + 1) % 7) if self.weekday is not None else ""
+        return f"{action}{time_int}{unit}{weekday}"
 
-    def __post_init__(self) -> None:
-        """Convert the action and the unit to enums, then validate the configuration."""
-        if self.action is None:
-            msg = "Snaptime string is invalid: must provide either a snap `@` or time delta `+-`."
-            raise SnaptimeError(msg)
+    def _convert_to_enums(self) -> None:
         try:
             # frozen dataclasses block normal attribute assignment
             object.__setattr__(self, "action", Action(self.action))
             if self.unit is not None:
                 object.__setattr__(self, "unit", Unit(self.unit))
+            if self.weekday is not None:
+                object.__setattr__(self, "weekday", Weekday(self.weekday))
         except ValueError as exc:
             raise SnaptimeError(str(exc)) from exc
+
+    def __post_init__(self) -> None:
+        """Convert the action, the unit and the weekday to enums, then validate the configuration."""
+        if self.action is None:
+            msg = "Snaptime string is invalid: must provide either a snap `@` or time delta `+-`."
+            raise SnaptimeError(msg)
+        self._convert_to_enums()
+
+        if self.weekday is not None:
+            _verify_weekday(self.action, self.unit, self.time_int)
 
         if self.action == Action.SNAP:
             if self.unit is None:

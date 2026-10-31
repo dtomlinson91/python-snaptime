@@ -217,7 +217,9 @@ class TestSnaptime:
         result = repr(Snaptime(action="@", unit="d"))
 
         # assert
-        assert result == "Snaptime(action=<Action.SNAP: '@'>, unit=<Unit.DAY: ('d', 'day', 'days')>, time_int=None)"
+        assert result == (
+            "Snaptime(action=<Action.SNAP: '@'>, unit=<Unit.DAY: ('d', 'day', 'days')>, time_int=None, weekday=None)"
+        )
 
     def test_snaptime_is_frozen(self):
         # arrange
@@ -299,8 +301,103 @@ def test_snaptime_str_action(snaptime, result):
 
 @pytest.mark.parametrize(
     "snaptime",
-    ["2d", "@2d", "@7m", "@0m", "@48h", "@", "@ms", "@us", "+d", "-2", "@@d", "@xyz", "+d@d"],
+    [
+        "2d",
+        "@2d",
+        "@7m",
+        "@0m",
+        "@48h",
+        "@",
+        "@ms",
+        "@us",
+        "+d",
+        "-2",
+        "@@d",
+        "@xyz",
+        "+d@d",
+        "+w5",
+        "-1w5",
+        "@2w5",
+        "@w8",
+        "@w05",
+        "@week5",
+        "w5",
+    ],
 )
 def test_is_valid_false_for_invalid_snaptime(snaptime: str):
     # act/assert
     assert is_valid(snaptime) is False
+
+
+class TestSnaptimeWeekday:
+    @pytest.mark.parametrize("weekday", [Weekday.FRIDAY, 4])
+    def test_snaptime_weekday_converts_to_enum(self, weekday: Weekday | int):
+        # act
+        result = Snaptime(action="@", unit="w", weekday=weekday)
+
+        # assert
+        assert result.weekday is Weekday.FRIDAY
+
+    def test_snaptime_weekday_default_is_none(self):
+        # act
+        result = Snaptime(action="@", unit="w")
+
+        # assert
+        assert result.weekday is None
+
+    def test_snaptime_weekday_invalid(self):
+        # act/assert
+        with pytest.raises(SnaptimeError, match=f"^{re.escape('7 is not a valid Weekday')}$"):
+            Snaptime(action="@", unit="w", weekday=7)
+
+    @pytest.mark.parametrize(
+        "snaptime",
+        [
+            {"action": "+", "unit": "w", "time_int": 1},
+            {"action": "-", "unit": "w", "time_int": 1},
+            {"action": "@", "unit": "d"},
+            {"action": "@", "unit": "mon"},
+            {"action": "@"},
+        ],
+    )
+    def test_snaptime_weekday_only_with_snap_week(self, snaptime: dict[str, str | int]):
+        # act/assert
+        with pytest.raises(
+            SnaptimeError,
+            match=f"^{re.escape('Snaptime string is invalid: a day of the week is allowed only with the snap `@w`.')}$",
+        ):
+            Snaptime(**snaptime, weekday=Weekday.FRIDAY)
+
+    def test_snaptime_weekday_with_time_int(self):
+        # act/assert
+        with pytest.raises(
+            SnaptimeError,
+            match=f"^{re.escape('Snaptime string is invalid: cannot snap to a multiple of a day of the week.')}$",
+        ):
+            Snaptime(action="@", unit="w", time_int=2, weekday=Weekday.FRIDAY)
+
+    @pytest.mark.parametrize(
+        "weekday,result",
+        [
+            (Weekday.SUNDAY, "@w0"),
+            (Weekday.MONDAY, "@w1"),
+            (Weekday.TUESDAY, "@w2"),
+            (Weekday.WEDNESDAY, "@w3"),
+            (Weekday.THURSDAY, "@w4"),
+            (Weekday.FRIDAY, "@w5"),
+            (Weekday.SATURDAY, "@w6"),
+        ],
+    )
+    def test_snaptime_weekday_str(self, weekday: Weekday, result: str):
+        # act
+        snaptime_str = str(Snaptime(action=Action.SNAP, unit=Unit.WEEK, weekday=weekday))
+
+        # assert
+        assert snaptime_str == result
+
+    def test_snaptime_weekday_equality(self):
+        # act/assert
+        assert Snaptime(action="@", unit="w", weekday=4) == Snaptime(
+            action=Action.SNAP, unit=Unit.WEEK, weekday=Weekday.FRIDAY
+        )
+        assert Snaptime(action="@", unit="w", weekday=Weekday.FRIDAY) != Snaptime(action="@", unit="w")

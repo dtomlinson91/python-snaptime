@@ -25,7 +25,8 @@ def _handle_snap_cases(
     elif snap.unit == Unit.DAY:
         dtm = dtm.start_of("day")
     elif snap.unit == Unit.WEEK:
-        dtm = dtm.subtract(days=(dtm.weekday() - week_start) % 7).start_of("day")
+        first_day = week_start if snap.weekday is None else snap.weekday
+        dtm = dtm.subtract(days=(dtm.weekday() - first_day) % 7).start_of("day")
     elif snap.unit == Unit.MONTH:
         dtm = dtm.start_of("month")
     elif snap.unit == Unit.QUARTER:
