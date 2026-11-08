@@ -4,6 +4,29 @@ All notable changes to this project are documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-10-31
+
+
+### ✨ Features
+
+- Accept `datetime.date` in `snap`, `apply` and `snap_range`
+- Add the `now` keyword and the `NOW` constant for the current time
+
+    - `snap_range(dtm, "-24h", "now")` gives the last 24 hours
+    - `to_string` and `str(CompiledSnaptime)` now return `now` for no
+    snaptimes, not an empty string
+
+- Snap to a day of the week with `@w0` to `@w7`
+
+    - `w0` and `w7` are Sunday, `w1` is Monday and `w6` is Saturday, as in
+    Splunk
+    - `@w0` to `@w7` ignore `week_start`
+
+
+### 📘 Documentation
+
+- Clarify comment and doc comment rules with examples
+
 ## [1.1.0] - 2026-10-30
 
 ### Release Summary
@@ -112,6 +135,7 @@ A major release. It removes support for Python 3.9, keeps the timezone of aware 
 
 - Initial release
 
+[1.1.1]: https://github.com/dtomlinson91/python-snaptime/compare/v1.1.0..v1.1.1
 [1.1.0]: https://github.com/dtomlinson91/python-snaptime/compare/v1.0.0..v1.1.0
 [1.0.0]: https://github.com/dtomlinson91/python-snaptime/compare/v0.1.1..v1.0.0
 [0.1.0]: https://github.com/dtomlinson91/python-snaptime/releases/tag/v0.1.0
