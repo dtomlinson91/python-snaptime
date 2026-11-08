@@ -20,10 +20,10 @@ A Python library that changes `datetime` objects with Splunk-style relative time
 - `git cliff` makes the changelog from Conventional Commits, with the settings in `cliff.toml`. The workflow reads `cliff.toml` and `release-notes.json` from `main`.
 - Put hand-written release summaries in `release-notes.json`. The `version` key is the full tag name, for example `v1.2.0`.
 
-<!-- cmb:begin slug=writing-style version=1 hash=96b35fbc -->
+<!-- cmb:begin slug=writing-style version=2 hash=5bada41f -->
 ## Writing style
 
-Write the text that goes into the repo or to other people in Simplified Technical English (from ASD-STE100): code comments and docstrings, docs, READMEs, CLAUDE.md, skill and tool descriptions, commit messages, PR descriptions, and error and log messages. A reader must get the meaning at the first reading. Where a kind of text has its own format rules, such as the one-line, lower-case format of a code comment, those rules win. These rules do not apply to code, to quoted logs and output, or to text that someone else wrote.
+Write the text that goes into the repo or to other people in Simplified Technical English (from ASD-STE100): code comments and docstrings, docs, READMEs, CLAUDE.md, skill and tool descriptions, commit messages, PR descriptions, and error and log messages. A reader must get the meaning at the first reading. Where a kind of text has its own format rules, such as the one-line, lower-case format of a code comment, those rules win. These rules do not apply to code, to quoted logs and output, to text that someone else wrote, or to UI text. UI text is the labels, help text and messages that an app shows its users, and it has its own rules.
 
 - Use the active voice. Use the passive only when the actor is unknown or not important.
 - Use plain verbs, not phrasal verbs: "start", not "spin up". "Remove", not "take off".
