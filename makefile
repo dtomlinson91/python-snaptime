@@ -2,12 +2,10 @@
 
 lint:
 	@echo "Linting the code"
-	@echo "Formatting with isort"
-	uv run isort ./python_snaptime ./tests
+	@echo "Fixing lint errors with Ruff"
+	uv run ruff check --fix ./python_snaptime ./tests
 	@echo "Formatting with Ruff"
 	uv run ruff format ./python_snaptime ./tests
-	@echo "Cleaning with pycln"
-	uv run pycln --all ./python_snaptime ./tests
 
 test:
 	@echo "Running tests"

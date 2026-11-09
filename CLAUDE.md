@@ -9,7 +9,7 @@ A Python library that changes `datetime` objects with Splunk-style relative time
 - uv manages the environment. Run each tool with `uv run`, for example `uv run ruff check`.
 - Run `uv sync` to install the package and the dev dependencies. `uv.lock` holds the locked versions.
 - Run the tests with `make test`. It runs pytest with coverage and writes an HTML report to `htmlcov/`.
-- `make lint` runs isort, `ruff format` and pycln on `python_snaptime/` and `tests/`.
+- `make lint` runs `ruff check --fix` and then `ruff format` on `python_snaptime/` and `tests/`.
 - Ruff reads `pyproject.toml` for the package and `tests/ruff.toml` for the tests.
 - The minimum Python version is 3.10.
 - `tests.yml` runs the tests on Python 3.10 to 3.14 for each push to `main` and each PR. Add a new Python version to its matrix when the project supports it.
