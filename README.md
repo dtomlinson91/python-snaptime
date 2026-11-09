@@ -155,31 +155,31 @@ from python_snaptime import (
     NOW, SnaptimeError, Weekday, apply, compile, is_valid, parse, snap, snap_now, snap_range, to_string,
 )
 
-now = pendulum.datetime(2024, 12, 30, 18, 52)  # Monday
+dtm = pendulum.datetime(2024, 12, 30, 18, 52)  # Monday
 
-snap(now, "@d")                             # 2024-12-30 00:00, start of today
-snap(now, "@d-2h+10m")                      # 2024-12-29 22:10
-snap(now, "@15m")                           # 2024-12-30 18:45, 15-minute bucket
-snap(now, "@w", week_start=Weekday.SUNDAY)  # 2024-12-29 00:00
-snap(now, "@w5")                            # 2024-12-27 00:00, last Friday (Splunk weekday)
+snap(dtm, "@d")                             # 2024-12-30 00:00, start of today
+snap(dtm, "@d-2h+10m")                      # 2024-12-29 22:10
+snap(dtm, "@15m")                           # 2024-12-30 18:45, 15-minute bucket
+snap(dtm, "@w", week_start=Weekday.SUNDAY)  # 2024-12-29 00:00
+snap(dtm, "@w5")                            # 2024-12-27 00:00, last Friday (Splunk weekday)
 snap(date(2024, 12, 30), "-1mon@mon")       # date(2024, 11, 1)
 snap_now("@h", tz="Europe/London")          # start of the current hour in London
 
-snap_range(now, "-1d@d", "@d")                  # (2024-12-29 00:00, 2024-12-30 00:00)
-snap_range(now, "-1d@d", "@d", inclusive=True)  # (2024-12-29 00:00, 2024-12-29 23:59:59.999999)
-snap_range(now, "-24h", "now")                  # (2024-12-29 18:52, 2024-12-30 18:52)
-snap_range(now, "-24h", NOW)                    # the same, with the NOW constant
+snap_range(dtm, "-1d@d", "@d")                  # (2024-12-29 00:00, 2024-12-30 00:00)
+snap_range(dtm, "-1d@d", "@d", inclusive=True)  # (2024-12-29 00:00, 2024-12-29 23:59:59.999999)
+snap_range(dtm, "-24h", "now")                  # (2024-12-29 18:52, 2024-12-30 18:52)
+snap_range(dtm, "-24h", NOW)                    # the same, with the NOW constant
 
 ops = parse("@d-2h")    # parse once
-apply(now, ops)         # 2024-12-29 22:00, apply many times
+apply(dtm, ops)         # 2024-12-29 22:00, apply many times
 to_string(ops)          # "@d-2h"
 
 yesterday = compile("-1d@d")
-yesterday.apply(now)    # 2024-12-29 00:00
+yesterday.apply(dtm)    # 2024-12-29 00:00
 
 is_valid("@d-2h")       # True
 is_valid("@ms")         # False
-snap(now, "@ms")        # raises SnaptimeError, a subclass of ValueError
+snap(dtm, "@ms")        # raises SnaptimeError, a subclass of ValueError
 ```
 
 ### Advanced
