@@ -96,11 +96,6 @@ def apply(
 
     Returns:
         pendulum.DateTime | dt.datetime | pendulum.Date | dt.date: The resulting snapped datetime or date.
-
-    Raises:
-        SnaptimeError: If `dtm` is a date and a snaptime has a unit smaller than a day.
-        TypeError: If `dtm` is not a `pendulum.DateTime`, a `datetime.datetime`, a `pendulum.Date` or a
-            `datetime.date`.
     """
     return _transform_datetime(dtm, snaptimes, week_start)
 
@@ -135,12 +130,6 @@ def snap(
 
     Returns:
         pendulum.DateTime | dt.datetime | pendulum.Date | dt.date: The resulting snapped datetime or date.
-
-    Raises:
-        SnaptimeError: If the snaptime string is invalid, or if `dtm` is a date and the snaptime string
-            has a unit smaller than a day.
-        TypeError: If `dtm` is not a `pendulum.DateTime`, a `datetime.datetime`, a `pendulum.Date` or a
-            `datetime.date`.
     """
     return apply(dtm, parse(snap), week_start=week_start)
 
@@ -300,11 +289,6 @@ class CompiledSnaptime:
 
         Returns:
             pendulum.DateTime | dt.datetime | pendulum.Date | dt.date: The resulting snapped datetime or date.
-
-        Raises:
-            SnaptimeError: If `dtm` is a date and a snaptime has a unit smaller than a day.
-            TypeError: If `dtm` is not a `pendulum.DateTime`, a `datetime.datetime`, a `pendulum.Date` or
-                a `datetime.date`.
         """
         return apply(dtm, self.snaptimes, week_start=self.week_start if week_start is None else week_start)
 
@@ -318,8 +302,5 @@ def compile(snaptime: str, *, week_start: Weekday = Weekday.MONDAY) -> CompiledS
 
     Returns:
         CompiledSnaptime: The parsed snaptime string.
-
-    Raises:
-        SnaptimeError: If the snaptime string is invalid.
     """
     return CompiledSnaptime(tuple(parse(snaptime)), week_start=week_start)

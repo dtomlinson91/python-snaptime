@@ -115,7 +115,11 @@ class Snaptime:
             raise SnaptimeError(str(exc)) from exc
 
     def __post_init__(self) -> None:
-        """Convert the action, the unit and the weekday to enums, then validate the configuration."""
+        """Convert the action, the unit and the weekday to enums, then validate the configuration.
+
+        Raises:
+            SnaptimeError: If the snaptime string is invalid.
+        """
         if self.action is None:
             msg = "Snaptime string is invalid: must provide either a snap `@` or time delta `+-`."
             raise SnaptimeError(msg)

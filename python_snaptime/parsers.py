@@ -121,9 +121,6 @@ def parse_snaptime_string(
 
     Returns:
         pendulum.DateTime: The resulting snapped datetime.
-
-    Raises:
-        SnaptimeError: If the snaptime string is invalid.
     """
     parsed_snaptimes = parse(snaptime)
     for _snaptime in parsed_snaptimes:
