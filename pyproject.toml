@@ -51,6 +51,11 @@ indent-width = 4
 extend-exclude = ["typings"]
 
 [tool.ruff.lint]
+# Enable preview rules for ruff linting docstrings
+preview = true
+explicit-preview-rules = true
+extend-select = ["DOC102", "DOC201", "DOC202", "DOC402", "DOC403", "DOC501", "DOC502"]
+
 select = ["ALL"]
 ignore = [
     # ruff formatter
