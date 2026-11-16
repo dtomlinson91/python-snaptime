@@ -1,6 +1,6 @@
 # python-snaptime
 
-<!-- cmb: managed by claude-md-builder (https://claude-md.membo.co.uk). Text between cmb:begin and cmb:end comes from the shared library. To change it, edit it here and ask Claude to push it. Text outside the blocks belongs to this repo. -->
+<!-- cfb: managed by config-builder (https://config.membo.co.uk). Text between cfb:begin and cfb:end comes from the shared library. To change it, edit it here and ask Claude to push it. Text outside the blocks belongs to this repo. -->
 
 A Python library that changes `datetime` objects with Splunk-style relative time modifiers, for example `@d-2h`.
 
@@ -20,7 +20,7 @@ A Python library that changes `datetime` objects with Splunk-style relative time
 - `git cliff` makes the changelog from Conventional Commits, with the settings in `cliff.toml`. The workflow reads `cliff.toml` and `release-notes.json` from `main`.
 - Put hand-written release summaries in `release-notes.json`. The `version` key is the full tag name, for example `v1.2.0`.
 
-<!-- cmb:begin slug=writing-style version=2 hash=5bada41f -->
+<!-- cfb:begin slug=writing-style version=2 hash=5bada41f -->
 ## Writing style
 
 Write the text that goes into the repo or to other people in Simplified Technical English (from ASD-STE100): code comments and docstrings, docs, READMEs, CLAUDE.md, skill and tool descriptions, commit messages, PR descriptions, and error and log messages. A reader must get the meaning at the first reading. Where a kind of text has its own format rules, such as the one-line, lower-case format of a code comment, those rules win. These rules do not apply to code, to quoted logs and output, to text that someone else wrote, or to UI text. UI text is the labels, help text and messages that an app shows its users, and it has its own rules.
@@ -38,9 +38,9 @@ Write the text that goes into the repo or to other people in Simplified Technica
 - Keep each hedge: "may have failed" stays "may have failed". Do not add a claim that you cannot support.
 - Do not use marketing words such as seamless, robust or powerful. Give the measurement instead.
 - Use the simple tenses. Use the present perfect only when it adds information, for example "the job has completed".
-<!-- cmb:end slug=writing-style -->
+<!-- cfb:end slug=writing-style -->
 
-<!-- cmb:begin slug=comments version=2 hash=1621a3bd -->
+<!-- cfb:begin slug=comments version=2 hash=1621a3bd -->
 ## Comments
 
 These rules apply to each comment that you write or change, in every file type, including config files such as the Makefile, `pyproject.toml` and the CI config. Do not rewrite other comments unless the user asks. A linter rule that the repo enforces wins over these rules. In all other cases, these rules override the comment style and the comment density of the surrounding code. A doc comment (a docstring, a Go doc comment or a JSDoc block) is not a comment in this sense.
@@ -89,9 +89,9 @@ Format:
 - Do not use emojis or em dashes.
 - Tool directives (`# noqa`, `# type: ignore`, `//nolint`) stay where the tool needs them. They are exempt from these rules, and so are `TODO:` and `FIXME:` markers.
 - File headers that the repo requires, such as a license header or a "generated file, do not edit" notice, are exempt.
-<!-- cmb:end slug=comments -->
+<!-- cfb:end slug=comments -->
 
-<!-- cmb:begin slug=doc-comments version=2 hash=54f3209d -->
+<!-- cfb:begin slug=doc-comments version=2 hash=54f3209d -->
 ## Docstrings and doc comments
 
 These rules apply to each docstring and doc comment that you write or change. Doc comments include docstrings, JSDoc, Go doc comments, rustdoc and Terraform `description` fields. Do not rewrite others. A linter rule that the repo enforces wins over these rules.
@@ -101,15 +101,15 @@ These rules apply to each docstring and doc comment that you write or change. Do
 - Do not put inline comments in a docstring or doc comment. Put the information in the summary or the description.
 - Do not put design decisions, ticket IDs, emojis or em dashes in a docstring or doc comment.
 - Text that renders for users follows its own convention, for example a docstring that becomes an OpenAPI description, or CLI help text. Do not rewrite it to match these rules.
-<!-- cmb:end slug=doc-comments -->
+<!-- cfb:end slug=doc-comments -->
 
-<!-- cmb:begin slug=python-docstrings version=1 hash=96355953 -->
+<!-- cfb:begin slug=python-docstrings version=1 hash=96355953 -->
 ## Python docstrings
 
 - Use Google style. Give each `Args:` entry a type, for example `listing_ids (list[str]): ...`. Give `Returns:` and `Raises:` a type too. The types must match the annotations in the signature.
-<!-- cmb:end slug=python-docstrings -->
+<!-- cfb:end slug=python-docstrings -->
 
-<!-- cmb:begin slug=python-type-annotations version=1 hash=d8061f56 -->
+<!-- cfb:begin slug=python-type-annotations version=1 hash=d8061f56 -->
 ## Python type annotations
 
 - Annotate each argument and each return value.
@@ -117,9 +117,9 @@ These rules apply to each docstring and doc comment that you write or change. Do
 - Use `X | None`, not `Optional[X]`. Use `X | Y`, not `Union[X, Y]`.
 - Import abstract types (`Callable`, `Iterable`, `Sequence`, `Mapping`) from `collections.abc`, not `typing`.
 - Use the syntax of the minimum Python version in `pyproject.toml` (`requires-python`).
-<!-- cmb:end slug=python-type-annotations -->
+<!-- cfb:end slug=python-type-annotations -->
 
-<!-- cmb:begin slug=ruff version=1 hash=8c7e726c -->
+<!-- cfb:begin slug=ruff version=1 hash=8c7e726c -->
 ## Lint and format with ruff
 
 When you change Python code, run ruff at the end of the task, before you report the work as done. Ruff uses the settings in `pyproject.toml`.
@@ -131,4 +131,4 @@ When you change Python code, run ruff at the end of the task, before you report 
 Run ruff from the repo's environment, for example `uv run ruff`, so that the version in the lock file runs.
 
 An inline ignore (`# noqa`) is allowed only where the code breaks a rule on purpose, because of a deliberate design decision. Ask the user before you add one. Name the rule in it, for example `# noqa: PLR0913`. Do not change the ruff settings to make an issue go away. If you cannot fix an issue, tell the user.
-<!-- cmb:end slug=ruff -->
+<!-- cfb:end slug=ruff -->
