@@ -1,6 +1,6 @@
 ---
 name: initialise-changelog
-description: Sets up a git-cliff changelog for a GitHub repo that uses Conventional Commits. Each stable release tag regenerates CHANGELOG.md and opens or updates one rolling pull request, through peter-evans/create-pull-request. Pre-release tags such as v1.0.0-dev and v1.0.0.dev0 are excluded. Detects the repo state and asks the user what they want. Writes cliff.toml, the workflow and an optional release-notes.json. Then guides the user through the GitHub settings, the token and the permissions. Use this skill when the user asks to set up, add, initialise or automate a changelog, release notes or git-cliff in a repo, or asks for a changelog PR on each tag, even if they do not say "git-cliff".
+description: Sets up a git-cliff changelog for a GitHub repo that uses Conventional Commits. Each stable release tag regenerates CHANGELOG.md and opens or updates one rolling pull request, through peter-evans/create-pull-request. Pre-release tags such as v1.0.0-dev and v1.0.0.dev0 are excluded. Detects the repo state and asks the user what they want. Writes cliff.toml, the workflow and an empty release-notes.json. Then guides the user through the GitHub settings, the token and the permissions. Use this skill when the user asks to set up, add, initialise or automate a changelog, release notes or git-cliff in a repo, or asks for a changelog PR on each tag, even if they do not say "git-cliff".
 argument-hint: "[repo path, or blank for the current repo]"
 ---
 
@@ -9,7 +9,7 @@ argument-hint: "[repo path, or blank for the current repo]"
 Set up this pipeline in a GitHub repo:
 
 1. A maintainer pushes a stable tag, for example `v1.4.0`.
-2. The `Changelog` workflow runs git-cliff on the full history up to that tag.
+2. The `Changelog` workflow runs git-cliff on the default branch, which holds every release. A tag that is not on the default branch yet, for example on a maintenance branch, waits until its branch is merged in.
 3. The workflow puts the new `CHANGELOG.md` on the rolling branch `changelog-release`, and opens or updates one PR into the default branch.
 4. A maintainer merges the PR when they want the changelog on the default branch.
 
@@ -52,17 +52,15 @@ Use AskUserQuestion. Ask only what Step 1 cannot answer. Put the recommended opt
    - All except `style`, `ci` and `chore` *(recommended)*: feat, fix, perf, revert, docs, refactor, test, build.
    - User-facing only: feat, fix, perf, revert, docs.
 3. **Headings.** "Emoji in the group headings?" Options: emoji (`✨ Features`) or plain (`Features`).
-4. **Release notes.** "Create `release-notes.json` for hand-written summaries?" Options: yes (recommended) or not now. Say that the workflow uses the file when it exists, so the user can add it later.
-
 **Round 2, only the questions that apply:**
 
-5. **Squash settings**, if `merge_settings` is not squash-only with title `PR_TITLE`. "Set the merge settings so that each PR becomes one conventional commit?"
+4. **Squash settings**, if `merge_settings` is not squash-only with title `PR_TITLE`. "Set the merge settings so that each PR becomes one conventional commit?"
    - Squash only, title from the PR title, body from the PR description *(recommended)*.
    - Squash only, title from the PR title, empty body.
    - Leave the settings unchanged.
-6. **Existing config**, if `existing.cliff_config` is set. "Replace the existing git-cliff config?" Options: replace, or keep it and add only the workflow. If the user keeps it, check its `tag_pattern` against Step 3. A `skip_tags` value that matches dev tags drops their commits.
-7. **Existing changelog**, if `CHANGELOG.md` exists and git-cliff did not generate it. Look for the header and the `## [x.y.z] - date` lines. "The first PR replaces `CHANGELOG.md`. Keep the old file?" Options: keep it as `CHANGELOG-legacy.md` and link it from the header, or replace it.
-8. **Old history**, if there are stable tags and less than about 80% of the sampled commits are conventional. "Releases from before Conventional Commits will show few or no entries. Include them?" Options: include all releases, or leave out releases older than a version the user names. For the second option, set `skip_tags` to a regex for those tags, for example `'^v0\.'`.
+5. **Existing config**, if `existing.cliff_config` is set. "Replace the existing git-cliff config?" Options: replace, or keep it and add only the workflow. If the user keeps it, check its `tag_pattern` against Step 3. A `skip_tags` value that matches dev tags drops their commits.
+6. **Existing changelog**, if `CHANGELOG.md` exists and git-cliff did not generate it. Look for the header and the `## [x.y.z] - date` lines. "The first PR replaces `CHANGELOG.md`. Keep the old file?" Options: keep it as `CHANGELOG-legacy.md` and link it from the header, or replace it.
+7. **Old history**, if there are stable tags and less than about 80% of the sampled commits are conventional. "Releases from before Conventional Commits will show few or no entries. Include them?" Options: include all releases, or leave out releases older than a version the user names. For the second option, set `skip_tags` to a regex for those tags, for example `'^v0\.'`.
 
 Do not ask about the token. The workflow uses `GITHUB_TOKEN` and changes to a GitHub App token when the App variable exists. Step 5 covers this.
 
@@ -86,7 +84,7 @@ Do not ask about the token. The workflow uses `GITHUB_TOKEN` and changes to a Gi
    - Plain headings: remove the emoji from each `group`, from the `🎯` and `🚨` headings, and from the `💥` marker.
    - Old history: set `skip_tags`.
    - Legacy changelog: run `mv CHANGELOG.md CHANGELOG-legacy.md`. Add a line to the `header` template, for example `For releases before 2.0.0, see [CHANGELOG-legacy.md](CHANGELOG-legacy.md).`
-5. If the user wants release notes, write `release-notes.json` with the content `[]`. Show them the shape of an entry:
+5. Write `release-notes.json` with the content `[]`, also when the user plans no notes. Show them the shape of an entry:
 
    ```json
    [
@@ -101,7 +99,7 @@ Do not ask about the token. The workflow uses `GITHUB_TOKEN` and changes to a Gi
    ]
    ```
 
-   `version` is the full tag name. Lists are optional, and the template adds the `- ` before each item. The workflow reads the file from the default branch, so notes added after the tag still appear at the next run.
+   `version` is the full tag name. Lists are optional. The template prints each item as written, with a blank line between items, so an item can be a paragraph. Start an item with `- ` to make a list. The workflow reads the file from the default branch, so notes added after the tag still appear at the next run.
 
 ## Step 4: Check
 
@@ -110,7 +108,7 @@ Do not ask about the token. The workflow uses `GITHUB_TOKEN` and changes to a Gi
    - If the output has many empty releases, tell the user and offer the old-history option from Step 2.
    - Without the `[remote.github]` block, git-cliff makes no GitHub API calls and needs no token.
    - If git-cliff is not installed, tell the user to run `brew install git-cliff` or `cargo install git-cliff`. Do not install it yourself.
-2. If `release-notes.json` exists, run `jq empty release-notes.json`.
+2. Run `jq empty release-notes.json`.
 3. If actionlint is installed, run it on the workflow. actionlint 1.7.12 has data for `create-github-app-token` v3.0.0 only. It reports that `client-id` is unknown and that `app-id` is required. Ignore those two errors: `v3` points to v3.3.0, which accepts `client-id` and deprecates `app-id`.
 
 ## Step 5: Guide the setup
