@@ -1,7 +1,5 @@
 # python-snaptime
 
-<!-- cfb: managed by config-builder (https://config.membo.co.uk). Text between cfb:begin and cfb:end comes from the shared library. To change it, edit it here and ask Claude to push it. Text outside the blocks belongs to this repo. -->
-
 A Python library that changes `datetime` objects with Splunk-style relative time modifiers, for example `@d-2h`.
 
 ## This repo
