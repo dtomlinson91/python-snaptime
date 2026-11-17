@@ -23,23 +23,24 @@ body = """
     {{ extra.summary }}
 
     {% if extra.highlights -%}
-    ### 🎯 Highlights\n
+    #### 🎯 Highlights\n
     {% for highlight in extra.highlights -%}
-    - {{ highlight | trim_start_matches(pat="- ") }}\n
+    {{ highlight }}\n
     {% endfor -%}
     {% endif -%}
 
     {% if extra.migration_notes -%}
-    ### 🚨 Migration Notes\n
+    #### 🚨 Migration Notes\n
     {% for migration_note in extra.migration_notes -%}
-    - {{ migration_note | trim_start_matches(pat="- ") }}\n
+    {{ migration_note }}\n
     {% endfor -%}
     {% endif -%}
     ---
+
 {% endif -%}
 
-{#- the <!-- N --> prefix of each group sets the order, striptags removes it -#}
 {% for group, commits in commits | group_by(attribute="group") %}
+    {#- the <!-- N --> prefix of each group sets the order, striptags removes it -#}
     ### {{ group | striptags | trim | upper_first }}
     {% for commit in commits %}
         - {% if commit.breaking %}💥 **BREAKING CHANGE**: {% endif %}{{ commit.message | upper_first -}}
@@ -48,14 +49,24 @@ body = """
           {{- line | indent(prefix="    ", first=true) }}
           {% endfor -%}
           {% endif -%}
-    {% endfor %}
-{% endfor %}\n
+    {% endfor %}\n
+{% endfor %}
 """
 footer = """
 {% for release in releases -%}
     {% if release.version -%}
-        {% if release.previous.version -%}
-[{{ release.version | trim_start_matches(pat="v") }}]: https://github.com/dtomlinson91/python-snaptime/compare/{{ release.previous.version }}..{{ release.version }}
+        {#- links each release to the previous release of the same major version -#}
+        {% set major = release.version | split(pat=".") | first -%}
+        {% set_global previous = release.previous.version | default(value="") -%}
+        {% set_global found = false -%}
+        {% for older in releases | slice(start=loop.index) -%}
+            {% if not found and older.version and older.version | split(pat=".") | first == major -%}
+                {% set_global previous = older.version -%}
+                {% set_global found = true -%}
+            {% endif -%}
+        {% endfor -%}
+        {% if previous -%}
+[{{ release.version | trim_start_matches(pat="v") }}]: https://github.com/dtomlinson91/python-snaptime/compare/{{ previous }}..{{ release.version }}
         {% else -%}
 [{{ release.version | trim_start_matches(pat="v") }}]: https://github.com/dtomlinson91/python-snaptime/releases/tag/{{ release.version }}
         {% endif -%}
@@ -83,17 +94,18 @@ commit_preprocessors = [
 
 # first match wins. `skip = true` keeps a type out of the changelog
 commit_parsers = [
+    { footer = "(?i)^security", group = "<!-- 02 -->🔐 Security" },
     { message = "^feat", group = "<!-- 00 -->✨ Features" },
     { message = "^fix", group = "<!-- 01 -->🐛 Bug Fixes" },
-    { message = "^perf", group = "<!-- 02 -->🏎 Performance" },
-    { message = "^revert", group = "<!-- 03 -->⏪ Reverts" },
-    { message = "^doc", group = "<!-- 04 -->📘 Documentation" },
-    { message = "^refactor", group = "<!-- 05 -->🛠 Refactor" },
-    { message = "^test", group = "<!-- 06 -->🧪 Testing" },
-    { message = "^build", group = "<!-- 07 -->🧱 Build" },
-    { message = "^style", group = "<!-- 08 -->🎨 Styling", skip = true },
-    { message = "^ci", group = "<!-- 09 -->🤖 CI", skip = true },
-    { message = "^chore", group = "<!-- 10 -->🧹 Miscellaneous", skip = true },
+    { message = "^perf", group = "<!-- 03 -->🏎 Performance" },
+    { message = "^revert", group = "<!-- 04 -->⏪ Reverts" },
+    { message = "^doc", group = "<!-- 05 -->📘 Documentation" },
+    { message = "^refactor", group = "<!-- 06 -->🛠 Refactor" },
+    { message = "^test", group = "<!-- 07 -->🧪 Testing" },
+    { message = "^build", group = "<!-- 08 -->🧱 Build" },
+    { message = "^style", group = "<!-- 09 -->🎨 Styling", skip = true },
+    { message = "^ci", group = "<!-- 10 -->🤖 CI", skip = true },
+    { message = "^chore", group = "<!-- 11 -->🧹 Miscellaneous", skip = true },
 ]
 # a breaking commit shows even when its parser skips it
 protect_breaking_commits = true

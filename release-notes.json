@@ -4,16 +4,16 @@
     "release_notes": {
       "summary": "A minor release. It adds a public API to parse, apply, compile and check snaptime strings, and it removes the pydantic dependency. pendulum is now the only runtime dependency.",
       "highlights": [
-        "`parse` and `apply` parse a snaptime string once and apply it to many datetimes. `compile` returns a reusable object, like `re.compile`",
-        "`snap_range` returns a start and an end datetime from two snaptime strings. `snap_now` snaps the current time",
-        "`@15m` snaps to a multiple of a unit. `week_start` sets the first day of the week for `@w`",
-        "Invalid snaptime strings raise `SnaptimeError`, a subclass of `ValueError`. `is_valid` checks a string without an exception"
+        "- `parse` and `apply` parse a snaptime string once and apply it to many datetimes. `compile` returns a reusable object, like `re.compile`",
+        "- `snap_range` returns a start and an end datetime from two snaptime strings. `snap_now` snaps the current time",
+        "- `@15m` snaps to a multiple of a unit. `week_start` sets the first day of the week for `@w`",
+        "- Invalid snaptime strings raise `SnaptimeError`, a subclass of `ValueError`. `is_valid` checks a string without an exception"
       ],
       "migration_notes": [
-        "This release has a breaking change in a minor version. The risk to users is low",
-        "`Snaptime` is now a frozen dataclass, not a pydantic model. `model_dump`, `model_validate` and attribute assignment no longer work",
-        "Invalid input raises `SnaptimeError`, not `pydantic.ValidationError`. Code that catches `ValueError` keeps working",
-        "pydantic is no longer installed with python-snaptime. If your code imports pydantic, add it to your own dependencies"
+        "- This release has a breaking change in a minor version. The risk to users is low",
+        "- `Snaptime` is now a frozen dataclass, not a pydantic model. `model_dump`, `model_validate` and attribute assignment no longer work",
+        "- Invalid input raises `SnaptimeError`, not `pydantic.ValidationError`. Code that catches `ValueError` keeps working",
+        "- pydantic is no longer installed with python-snaptime. If your code imports pydantic, add it to your own dependencies"
       ]
     }
   },
@@ -22,13 +22,13 @@
     "release_notes": {
       "summary": "A major release. It removes support for Python 3.9, keeps the timezone of aware datetimes, and rejects snaptime strings that contain unknown characters.",
       "highlights": [
-        "Support for pendulum 2. The package now accepts `pendulum>=2,<4`",
-        "`snap` now returns an aware `datetime.datetime` with the same `tzinfo` as the input"
+        "- Support for pendulum 2. The package now accepts `pendulum>=2,<4`",
+        "- `snap` now returns an aware `datetime.datetime` with the same `tzinfo` as the input"
       ],
       "migration_notes": [
-        "The minimum Python version is now 3.10. Python 3.9 is not supported",
-        "The minimum `pydantic` version is now 2.13.5",
-        "A snaptime string can contain only `@`, `+`, `-`, digits and unit strings. Any other character, including a space, raises a `ValueError`. For example, change `@d -2h` to `@d-2h`"
+        "- The minimum Python version is now 3.10. Python 3.9 is not supported",
+        "- The minimum `pydantic` version is now 2.13.5",
+        "- A snaptime string can contain only `@`, `+`, `-`, digits and unit strings. Any other character, including a space, raises a `ValueError`. For example, change `@d -2h` to `@d-2h`"
       ]
     }
   }

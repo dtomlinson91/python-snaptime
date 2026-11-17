@@ -23,23 +23,24 @@ body = """
     {{ extra.summary }}
 
     {% if extra.highlights -%}
-    ### 🎯 Highlights\n
+    #### 🎯 Highlights\n
     {% for highlight in extra.highlights -%}
     {{ highlight }}\n
     {% endfor -%}
     {% endif -%}
 
     {% if extra.migration_notes -%}
-    ### 🚨 Migration Notes\n
+    #### 🚨 Migration Notes\n
     {% for migration_note in extra.migration_notes -%}
     {{ migration_note }}\n
     {% endfor -%}
     {% endif -%}
     ---
+
 {% endif -%}
 
-{#- the <!-- N --> prefix of each group sets the order, striptags removes it -#}
 {% for group, commits in commits | group_by(attribute="group") %}
+    {#- the <!-- N --> prefix of each group sets the order, striptags removes it -#}
     ### {{ group | striptags | trim | upper_first }}
     {% for commit in commits %}
         - {% if commit.breaking %}💥 **BREAKING CHANGE**: {% endif %}{{ commit.message | upper_first -}}
@@ -48,14 +49,24 @@ body = """
           {{- line | indent(prefix="    ", first=true) }}
           {% endfor -%}
           {% endif -%}
-    {% endfor %}
-{% endfor %}\n
+    {% endfor %}\n
+{% endfor %}
 """
 footer = """
 {% for release in releases -%}
     {% if release.version -%}
-        {% if release.previous.version -%}
-[{{ release.version | trim_start_matches(pat="v") }}]: @@REPO_URL@@/compare/{{ release.previous.version }}..{{ release.version }}
+        {#- links each release to the previous release of the same major version -#}
+        {% set major = release.version | split(pat=".") | first -%}
+        {% set_global previous = release.previous.version | default(value="") -%}
+        {% set_global found = false -%}
+        {% for older in releases | slice(start=loop.index) -%}
+            {% if not found and older.version and older.version | split(pat=".") | first == major -%}
+                {% set_global previous = older.version -%}
+                {% set_global found = true -%}
+            {% endif -%}
+        {% endfor -%}
+        {% if previous -%}
+[{{ release.version | trim_start_matches(pat="v") }}]: @@REPO_URL@@/compare/{{ previous }}..{{ release.version }}
         {% else -%}
 [{{ release.version | trim_start_matches(pat="v") }}]: @@REPO_URL@@/releases/tag/{{ release.version }}
         {% endif -%}
@@ -83,6 +94,7 @@ commit_preprocessors = [
 
 # first match wins. `skip = true` keeps a type out of the changelog
 commit_parsers = [
+    { footer = "(?i)^security", group = "<!-- 02 -->🔐 Security" },
     { message = "^feat", group = "<!-- 00 -->✨ Features" },
     { message = "^fix", group = "<!-- 01 -->🐛 Bug Fixes" },
     { message = "^perf", group = "<!-- 03 -->🏎 Performance" },
@@ -91,7 +103,6 @@ commit_parsers = [
     { message = "^refactor", group = "<!-- 06 -->🛠 Refactor" },
     { message = "^test", group = "<!-- 07 -->🧪 Testing" },
     { message = "^build", group = "<!-- 08 -->🧱 Build" },
-    { body = ".*security", group = "<!-- 02 -->🔐 Security" },
     { message = "^style", group = "<!-- 09 -->🎨 Styling", skip = true },
     { message = "^ci", group = "<!-- 10 -->🤖 CI", skip = true },
     { message = "^chore", group = "<!-- 11 -->🧹 Miscellaneous", skip = true },

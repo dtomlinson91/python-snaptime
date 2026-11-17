@@ -167,6 +167,7 @@ Use `BLANK` instead of `PR_BODY` for an empty body. The reasons:
 2. Test without a new release: `gh workflow run changelog.yaml -f tag=<latest stable tag>`. The workflow reads the config from the default branch, so a tag from before the config also works.
 3. Optional: push a dev tag. The `Check the tag` job logs a notice, and the changelog job is skipped.
 4. For each later release: `git cliff --bumped-version` prints the next version from the commit types. Then run `git tag <version>` and `git push origin <version>`.
+5. To list a commit under Security, end its message with a `Security: <text>` trailer. This works for every type, also for a hidden type such as `chore`.
 
 ## Output
 
