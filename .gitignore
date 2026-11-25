@@ -181,6 +181,7 @@ pyrightconfig.json
 
 # misc
 docs
+!/.agents/docs/
 main.py
 !python_snaptime/main.py
 
