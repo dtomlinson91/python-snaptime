@@ -1,6 +1,6 @@
-<!-- cfb:begin slug=comments version=3 hash=7e812e6d -->
+<!-- cfb:begin slug=comments version=4 hash=b25fba99 -->
 ---
-description: write or change a code comment in any file, config files included
+description: write or change a code comment in any file, not a docstring or doc comment
 ---
 
 ## Comments

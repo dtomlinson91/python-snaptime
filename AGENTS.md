@@ -21,8 +21,7 @@ A Python library that changes `datetime` objects with Splunk-style relative time
 <!-- cfb:index-begin -->
 [Docs Index]|root: .agents/docs
 |IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning. Before a task, read every doc whose entry names the task, not only the closest one.
-|comments.md: write or change a code comment in any file, config files included
-|doc-comments.md: write or change a docstring, JSDoc, Go doc comment, rustdoc or Terraform description
+|comments.md: write or change a code comment in any file, not a docstring or doc comment
 |python-docstrings.md: write or change a Python docstring
 |python-type-annotations.md: write or change a Python function signature or a type annotation
 |ruff.md: finish a change to Python code in a repo that lints or formats with ruff
